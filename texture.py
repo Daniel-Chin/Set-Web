@@ -20,7 +20,7 @@ def bboxOf(x: int, y: int):
 class Texture:
     def __init__(self, tkRoot: tk.Tk):
         _ = tkRoot  # Just lexical message, because root is required by ImageTk.PhotoImage.
-        print('Rasterizing texture...', end='', flush=True)
+        print('Rasterizing texture... ', end='', flush=True)
         cairosvg.svg2png(
             url=SVG, write_to=PNG, 
             output_width =CARD_RESOLUTION[0] * 9, 

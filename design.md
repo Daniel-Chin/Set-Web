@@ -12,23 +12,23 @@
   - control
     - row, col
 - player zone
-  - claimed set? timestamp
-  - thiccness
-  - number of wins
   - me = first
     - control
       - change name, color
-  - others
-    - on-display
+  - everyone
+    - claimed set? timestamp
+    - thiccness
+    - number of wins
+    - display case
       - control
         - hide/show
+        - select card
       - display
-        - heat
+        - heat, selected by
     - archive
     - vote
 - "Set!" button
   - cancel
-- keybindings cheatsheet (?)
 - vote accept button
   - only when exactly 1 player selected some cards
   - selection change leads to input deadzone
