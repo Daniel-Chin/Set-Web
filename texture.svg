@@ -98,7 +98,7 @@
   <path id="horizontal" class="bar" d="M -62,2 V 0 H 62 V 2"/>
   <path id="vertical"   class="bar" d="M 2,-91 H 0 V 91 H 2"/>
  </defs>
- <circle cx="0" cy="0" r="99999" fill="#ff0000"/>
+ <!-- <circle cx="0" cy="0" r="99999" fill="#ff0000"/> -->
  <g id="main">
   <g filter="url(#filter_shadow)">
    <g transform="translate(1000,1000)"><use class="cap" xlink:href="#card"/><use class="xi" xlink:href="#o_a1"/></g>

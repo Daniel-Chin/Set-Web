@@ -25,6 +25,25 @@ class Player:
     display_case: tp.List[SmartCard] = []
     display_case_hidden: bool = False
 
+    def toPrimitive(self):
+        d = asdict(self)
+        d['display_case'] = [card.toPrimitive() for card in self.display_case]
+        return d
+    
+    @classmethod
+    def fromPrimitive(cls, d: dict):
+        return cls(
+            uuid=d['uuid'], 
+            name=d['name'], 
+            color=d['color'], 
+            voting=Vote(d['voting']), 
+            shouted_set=d['shouted_set'], 
+            wealth_thickness=d['wealth_thickness'], 
+            n_of_wins=d['n_of_wins'], 
+            display_case=[SmartCard.fromPrimitive(card) for card in d['display_case']], 
+            display_case_hidden=d['display_case_hidden'], 
+        )
+
 @dataclass
 class SmartCard:
     card: Card
@@ -40,7 +59,7 @@ class SmartCard:
         return d
     
     @classmethod
-    def fromPrimitive(cls, d):
+    def fromPrimitive(cls, d: dict):
         s = d['card']
         card = (int(s[0]) % 3, int(s[0]) // 3, int(s[1]) % 3, int(s[1]) // 3)
         return cls(
@@ -66,3 +85,26 @@ class Gamestate:
             for player in self.players:
                 if player.voting == Vote.ACCEPT:
                     player.voting = Vote.IDLE
+    
+    def toPrimitive(self):
+        d = asdict(self)
+        def bools():
+            for idx in iterAllCards():
+                yield self.cards_in_deck[idx]
+        d['cards_in_deck'] = boolsToBytes(bools())
+        d['players'] = [player.toPrimitive() for player in self.players]
+        d['public_zone'] = [card.toPrimitive() for card in self.public_zone]
+        return d
+    
+    @classmethod
+    def fromPrimitive(cls, d: dict):
+        cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool] = {}
+        for idx, bool_ in zip(iterAllCards(), bytesToBools(d['cards_in_deck'])):
+            cards_in_deck[idx] = bool_
+        return cls(
+            cards_in_deck=cards_in_deck, 
+            players=[Player.fromPrimitive(player) for player in d['players']], 
+            public_zone=[SmartCard.fromPrimitive(card) for card in d['public_zone']], 
+            public_zone_n_cols=d['public_zone_n_cols'], 
+            public_zone_n_rows=d['public_zone_n_rows'], 
+        )
