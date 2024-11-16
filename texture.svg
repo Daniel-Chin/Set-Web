@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="979.5 971 387 558">
+ <title>Set cards</title>
+ <desc>A complete set of 81 cards isomorphic with those of the game Set showing all possible combinations of the four features, by CMG Lee. The icons are different to avoid copyright infringement. Considering each 3x3 group as a plane aligned in 4-dimensional space, a set comprises 3 cards in a (4-dimensional) row, with wrap-around. Modified from the wiki image.</desc>
+ <style type="text/css">
+  #main { font-family:Helvetica,Arial,sans-serif; font-size:9px; text-anchor:middle; fill:none; stroke:none; stroke-width:0.5; }
+  text  { stroke:none; cursor:default; }
+  .xi   { stroke:#009900; fill:url(#xi); }
+  .yi   { stroke:#009900; fill:url(#yi); }
+  .zi   { stroke:#009900; fill:url(#zi); }
+  .xj   { stroke:#3333ff; fill:url(#xj); }
+  .yj   { stroke:#3333ff; fill:url(#yj); }
+  .zj   { stroke:#3333ff; fill:url(#zj); }
+  .xk   { stroke:#ff0099; fill:url(#xk); }
+  .yk   { stroke:#ff0099; fill:url(#yk); }
+  .zk   { stroke:#ff0099; fill:url(#zk); }
+  .bar  { stroke:#999999; fill:none; stroke-width:0.5; }
+  .noc  { fill:#ffffff; }
+  .cap  { fill:#ffffff; }
+ </style>
+ <defs>
+  <filter id="filter_shadow">
+   <feColorMatrix in="SourceAlpha" result="color" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.25 0" />
+   <feGaussianBlur result="blur" in="color" stdDeviation="1"/>
+   <feOffset result="offset" in="blur" dx="1" dy="2" />
+   <feMerge><feMergeNode in="offset"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <radialGradient id="xi" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+   <stop offset="0%" stop-color="#ffffff"/>
+  </radialGradient>
+  <radialGradient id="xj" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+   <stop offset="0%" stop-color="#ffffff"/>
+  </radialGradient>
+  <radialGradient id="xk" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+   <stop offset="0%" stop-color="#ffffff"/>
+  </radialGradient>
+  <pattern id="yi" patternUnits="userSpaceOnUse" width="2" height="2">
+   <circle cx="0" cy="0" r="9" fill="#ffffff"/>
+   <path d="M 1,0 V 2" stroke-width="0.5" stroke="#009900"/>
+  </pattern>
+  <pattern id="yj" patternUnits="userSpaceOnUse" width="2" height="2">
+   <circle cx="0" cy="0" r="9" fill="#ffffff"/>
+   <path d="M 1,0 V 2" stroke-width="0.5" stroke="#3333ff"/>
+  </pattern>
+  <pattern id="yk" patternUnits="userSpaceOnUse" width="2" height="2">
+   <circle cx="0" cy="0" r="9" fill="#ffffff"/>
+   <path d="M 1,0 V 2" stroke-width="0.5" stroke="#ff0099"/>
+  </pattern>
+  <linearGradient id="zi" x1="0%" y1="0%" x2="0%" y2="100%">
+   <stop offset="0%" stop-color="#009900"/>
+  </linearGradient>
+  <linearGradient id="zj" x1="0%" y1="0%" x2="0%" y2="100%">
+   <stop offset="0%" stop-color="#3333ff"/>
+  </linearGradient>
+  <linearGradient id="zk" x1="0%" y1="0%" x2="0%" y2="100%">
+   <stop offset="0%" stop-color="#ff0099"/>
+  </linearGradient>
+  <rect id="card" x="-20" y="-29" width="40" height="58" rx="1" ry="1" stroke-width="0.2" stroke="#000000"/>
+  <path id="a1" d="M -10,0 L 0,-5 L 10,0 L 0,5 Z"/>
+  <path id="b1" d="M -9,0 C -8,-8 0,-3 4,-3 S 9,-8 9,0 C 8,8 0,3 -4,3 S -9,8 -9,0"/>
+  <rect id="c1" x="-9" y="-5" width="18" height="10" rx="7" ry="5"/>
+  <g             id="a2">
+   <use xlink:href="#a1" transform="translate(0,-8)"/>
+   <use xlink:href="#a1" transform="translate(0, 8)"/>
+  </g>
+  <g             id="a3">
+   <use xlink:href="#a1"/>
+   <use xlink:href="#a1" transform="translate(0,-12)"/>
+   <use xlink:href="#a1" transform="translate(0, 12)"/>
+  </g>
+  <g             id="b2">
+   <use xlink:href="#b1" transform="translate(0,-8)"/>
+   <use xlink:href="#b1" transform="translate(0, 8)"/>
+  </g>
+  <g             id="b3">
+   <use xlink:href="#b1"/>
+   <use xlink:href="#b1" transform="translate(0,-12)"/>
+   <use xlink:href="#b1" transform="translate(0, 12)"/>
+  </g>
+  <g             id="c2">
+   <use xlink:href="#c1" transform="translate(0,-8)"/>
+   <use xlink:href="#c1" transform="translate(0, 8)"/>
+  </g>
+  <g             id="c3">
+   <use xlink:href="#c1"/>
+   <use xlink:href="#c1" transform="translate(0,-12)"/>
+   <use xlink:href="#c1" transform="translate(0, 12)"/>
+  </g>
+  <g id="o_a1"><use xlink:href="#a1"/></g>
+  <g id="o_b1"><use xlink:href="#b1"/></g>
+  <g id="o_c1"><use xlink:href="#c1"/></g>
+  <g id="o_a2"><use xlink:href="#a2"/></g>
+  <g id="o_b2"><use xlink:href="#b2"/></g>
+  <g id="o_c2"><use xlink:href="#c2"/></g>
+  <g id="o_a3"><use xlink:href="#a3"/></g>
+  <g id="o_b3"><use xlink:href="#b3"/></g>
+  <g id="o_c3"><use xlink:href="#c3"/></g>
+  <path id="horizontal" class="bar" d="M -62,2 V 0 H 62 V 2"/>
+  <path id="vertical"   class="bar" d="M 2,-91 H 0 V 91 H 2"/>
+ </defs>
+ <circle cx="0" cy="0" r="99999" fill="#ff0000"/>
+ <g id="main">
+  <g filter="url(#filter_shadow)">
+   <g transform="translate(1000,1000)"><use class="cap" xlink:href="#card"/><use class="xi" xlink:href="#o_a1"/></g>
+   <g transform="translate(1043,1000)"><use class="noc" xlink:href="#card"/><use class="yi" xlink:href="#o_a1"/></g>
+   <g transform="translate(1086,1000)"><use class="cap" xlink:href="#card"/><use class="zi" xlink:href="#o_a1"/></g>
+   <g transform="translate(1129,1000)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_a1"/></g>
+   <g transform="translate(1172,1000)"><use class="noc" xlink:href="#card"/><use class="yj" xlink:href="#o_a1"/></g>
+   <g transform="translate(1215,1000)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_a1"/></g>
+   <g transform="translate(1258,1000)"><use class="noc" xlink:href="#card"/><use class="xk" xlink:href="#o_a1"/></g>
+   <g transform="translate(1301,1000)"><use class="cap" xlink:href="#card"/><use class="yk" xlink:href="#o_a1"/></g>
+   <g transform="translate(1344,1000)"><use class="noc" xlink:href="#card"/><use class="zk" xlink:href="#o_a1"/></g>
+   <g transform="translate(1000,1062)"><use class="noc" xlink:href="#card"/><use class="xi" xlink:href="#o_b1"/></g>
+   <g transform="translate(1043,1062)"><use class="noc" xlink:href="#card"/><use class="yi" xlink:href="#o_b1"/></g>
+   <g transform="translate(1086,1062)"><use class="noc" xlink:href="#card"/><use class="zi" xlink:href="#o_b1"/></g>
+   <g transform="translate(1129,1062)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_b1"/></g>
+   <g transform="translate(1172,1062)"><use class="cap" xlink:href="#card"/><use class="yj" xlink:href="#o_b1"/></g>
+   <g transform="translate(1215,1062)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_b1"/></g>
+   <g transform="translate(1258,1062)"><use class="cap" xlink:href="#card"/><use class="xk" xlink:href="#o_b1"/></g>
+   <g transform="translate(1301,1062)"><use class="noc" xlink:href="#card"/><use class="yk" xlink:href="#o_b1"/></g>
+   <g transform="translate(1344,1062)"><use class="cap" xlink:href="#card"/><use class="zk" xlink:href="#o_b1"/></g>
+   <g transform="translate(1000,1124)"><use class="cap" xlink:href="#card"/><use class="xi" xlink:href="#o_c1"/></g>
+   <g transform="translate(1043,1124)"><use class="noc" xlink:href="#card"/><use class="yi" xlink:href="#o_c1"/></g>
+   <g transform="translate(1086,1124)"><use class="cap" xlink:href="#card"/><use class="zi" xlink:href="#o_c1"/></g>
+   <g transform="translate(1129,1124)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_c1"/></g>
+   <g transform="translate(1172,1124)"><use class="noc" xlink:href="#card"/><use class="yj" xlink:href="#o_c1"/></g>
+   <g transform="translate(1215,1124)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_c1"/></g>
+   <g transform="translate(1258,1124)"><use class="noc" xlink:href="#card"/><use class="xk" xlink:href="#o_c1"/></g>
+   <g transform="translate(1301,1124)"><use class="cap" xlink:href="#card"/><use class="yk" xlink:href="#o_c1"/></g>
+   <g transform="translate(1344,1124)"><use class="noc" xlink:href="#card"/><use class="zk" xlink:href="#o_c1"/></g>
+   <g transform="translate(1000,1186)"><use class="noc" xlink:href="#card"/><use class="xi" xlink:href="#o_a2"/></g>
+   <g transform="translate(1043,1186)"><use class="noc" xlink:href="#card"/><use class="yi" xlink:href="#o_a2"/></g>
+   <g transform="translate(1086,1186)"><use class="noc" xlink:href="#card"/><use class="zi" xlink:href="#o_a2"/></g>
+   <g transform="translate(1129,1186)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_a2"/></g>
+   <g transform="translate(1172,1186)"><use class="noc" xlink:href="#card"/><use class="yj" xlink:href="#o_a2"/></g>
+   <g transform="translate(1215,1186)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_a2"/></g>
+   <g transform="translate(1258,1186)"><use class="noc" xlink:href="#card"/><use class="xk" xlink:href="#o_a2"/></g>
+   <g transform="translate(1301,1186)"><use class="noc" xlink:href="#card"/><use class="yk" xlink:href="#o_a2"/></g>
+   <g transform="translate(1344,1186)"><use class="noc" xlink:href="#card"/><use class="zk" xlink:href="#o_a2"/></g>
+   <g transform="translate(1000,1248)"><use class="noc" xlink:href="#card"/><use class="xi" xlink:href="#o_b2"/></g>
+   <g transform="translate(1043,1248)"><use class="cap" xlink:href="#card"/><use class="yi" xlink:href="#o_b2"/></g>
+   <g transform="translate(1086,1248)"><use class="noc" xlink:href="#card"/><use class="zi" xlink:href="#o_b2"/></g>
+   <g transform="translate(1129,1248)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_b2"/></g>
+   <g transform="translate(1172,1248)"><use class="noc" xlink:href="#card"/><use class="yj" xlink:href="#o_b2"/></g>
+   <g transform="translate(1215,1248)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_b2"/></g>
+   <g transform="translate(1258,1248)"><use class="noc" xlink:href="#card"/><use class="xk" xlink:href="#o_b2"/></g>
+   <g transform="translate(1301,1248)"><use class="cap" xlink:href="#card"/><use class="yk" xlink:href="#o_b2"/></g>
+   <g transform="translate(1344,1248)"><use class="noc" xlink:href="#card"/><use class="zk" xlink:href="#o_b2"/></g>
+   <g transform="translate(1000,1310)"><use class="noc" xlink:href="#card"/><use class="xi" xlink:href="#o_c2"/></g>
+   <g transform="translate(1043,1310)"><use class="noc" xlink:href="#card"/><use class="yi" xlink:href="#o_c2"/></g>
+   <g transform="translate(1086,1310)"><use class="noc" xlink:href="#card"/><use class="zi" xlink:href="#o_c2"/></g>
+   <g transform="translate(1129,1310)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_c2"/></g>
+   <g transform="translate(1172,1310)"><use class="noc" xlink:href="#card"/><use class="yj" xlink:href="#o_c2"/></g>
+   <g transform="translate(1215,1310)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_c2"/></g>
+   <g transform="translate(1258,1310)"><use class="noc" xlink:href="#card"/><use class="xk" xlink:href="#o_c2"/></g>
+   <g transform="translate(1301,1310)"><use class="noc" xlink:href="#card"/><use class="yk" xlink:href="#o_c2"/></g>
+   <g transform="translate(1344,1310)"><use class="noc" xlink:href="#card"/><use class="zk" xlink:href="#o_c2"/></g>
+   <g transform="translate(1000,1372)"><use class="noc" xlink:href="#card"/><use class="xi" xlink:href="#o_a3"/></g>
+   <g transform="translate(1043,1372)"><use class="cap" xlink:href="#card"/><use class="yi" xlink:href="#o_a3"/></g>
+   <g transform="translate(1086,1372)"><use class="noc" xlink:href="#card"/><use class="zi" xlink:href="#o_a3"/></g>
+   <g transform="translate(1129,1372)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_a3"/></g>
+   <g transform="translate(1172,1372)"><use class="noc" xlink:href="#card"/><use class="yj" xlink:href="#o_a3"/></g>
+   <g transform="translate(1215,1372)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_a3"/></g>
+   <g transform="translate(1258,1372)"><use class="cap" xlink:href="#card"/><use class="xk" xlink:href="#o_a3"/></g>
+   <g transform="translate(1301,1372)"><use class="noc" xlink:href="#card"/><use class="yk" xlink:href="#o_a3"/></g>
+   <g transform="translate(1344,1372)"><use class="cap" xlink:href="#card"/><use class="zk" xlink:href="#o_a3"/></g>
+   <g transform="translate(1000,1434)"><use class="cap" xlink:href="#card"/><use class="xi" xlink:href="#o_b3"/></g>
+   <g transform="translate(1043,1434)"><use class="noc" xlink:href="#card"/><use class="yi" xlink:href="#o_b3"/></g>
+   <g transform="translate(1086,1434)"><use class="cap" xlink:href="#card"/><use class="zi" xlink:href="#o_b3"/></g>
+   <g transform="translate(1129,1434)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_b3"/></g>
+   <g transform="translate(1172,1434)"><use class="cap" xlink:href="#card"/><use class="yj" xlink:href="#o_b3"/></g>
+   <g transform="translate(1215,1434)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_b3"/></g>
+   <g transform="translate(1258,1434)"><use class="noc" xlink:href="#card"/><use class="xk" xlink:href="#o_b3"/></g>
+   <g transform="translate(1301,1434)"><use class="noc" xlink:href="#card"/><use class="yk" xlink:href="#o_b3"/></g>
+   <g transform="translate(1344,1434)"><use class="noc" xlink:href="#card"/><use class="zk" xlink:href="#o_b3"/></g>
+   <g transform="translate(1000,1496)"><use class="noc" xlink:href="#card"/><use class="xi" xlink:href="#o_c3"/></g>
+   <g transform="translate(1043,1496)"><use class="cap" xlink:href="#card"/><use class="yi" xlink:href="#o_c3"/></g>
+   <g transform="translate(1086,1496)"><use class="noc" xlink:href="#card"/><use class="zi" xlink:href="#o_c3"/></g>
+   <g transform="translate(1129,1496)"><use class="noc" xlink:href="#card"/><use class="xj" xlink:href="#o_c3"/></g>
+   <g transform="translate(1172,1496)"><use class="noc" xlink:href="#card"/><use class="yj" xlink:href="#o_c3"/></g>
+   <g transform="translate(1215,1496)"><use class="noc" xlink:href="#card"/><use class="zj" xlink:href="#o_c3"/></g>
+   <g transform="translate(1258,1496)"><use class="cap" xlink:href="#card"/><use class="xk" xlink:href="#o_c3"/></g>
+   <g transform="translate(1301,1496)"><use class="noc" xlink:href="#card"/><use class="yk" xlink:href="#o_c3"/></g>
+   <g transform="translate(1344,1496)"><use class="cap" xlink:href="#card"/><use class="zk" xlink:href="#o_c3"/></g>
+  </g>
+ </g>
+</svg>
