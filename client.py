@@ -17,7 +17,7 @@ PADX = 5
 PADY = 5
 
 UpdateGamestateEvent = tp.Callable[[Gamestate], None]
-UpdateUUIDEvent = tp.Callable[[UUID], None]
+UpdateUUIDEvent = tp.Callable[[str], None]
 ArglessEvent = tp.Callable[[], None]
 SubmitEventFunc = tp.Callable[[tp.Dict], None]
 
@@ -36,13 +36,11 @@ def EventsIn(sock: socket.socket):
 
 @contextmanager
 def NetworkClient(
+    host: str, port: int,
     onUpdateGamestate: UpdateGamestateEvent, 
     onUpdateUUID: UpdateUUIDEvent, 
     onDisconnect: ArglessEvent,
 ):
-    url = input('Server (ip_addr:port) > ')
-    host, port_str = url.split(':')
-    port = int(port_str)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         print(f'Connecting to {host}:{port}... ', end='', flush=True)
         sock.connect((host, port))
@@ -66,7 +64,7 @@ def NetworkClient(
                         print('Connection closed by server')
                         break
                     if isinstance(event, str):
-                        onUpdateUUID(UUID(event))
+                        onUpdateUUID(event)
                     else:
                         onUpdateGamestate(Gamestate.fromPrimitive(event))
             finally:
@@ -85,11 +83,12 @@ class Root(tk.Tk):
     def __init__(self):
         super().__init__()
         self.gamestate = Gamestate.default()
-        self.uuid: UUID | None = None
+        self.uuid: str | None = None
     
     @contextmanager
-    def context(self):
+    def context(self, host: str, port: int):
         with NetworkClient(
+            host, port,
             self.onUpdateGamestate, 
             self.onUpdateUUID, 
             self.onDisconnect,
@@ -117,12 +116,13 @@ class Root(tk.Tk):
     def onUpdateGamestate(self, gamestate: Gamestate):
         self.after_idle(self.updateGamestateNow, gamestate)
     
-    def onUpdateUUID(self, uuid: UUID):
+    def onUpdateUUID(self, uuid: str):
         self.uuid = uuid
+        self.setup()
     
     def onDisconnect(self):
-        messagebox.showerror('Error', 'Server disconneted!')
-        self.destroy()
+        messagebox.showerror('Error: Server disconnected', 'Server disconneted!')
+        self.quit()
     
     def getMyself(self):
         return self.gamestate.seekPlayer(self.uuid)
@@ -198,9 +198,15 @@ class BottomPanel(ttk.Frame):
 
 def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    url = input('Server (ip_addr:port) > ')
+    try:
+        host, port_str = url.split(':')
+    except ValueError:
+        host = 'localhost'
+        port_str = url
+    port = int(port_str)
     root = Root()
-    with root.context():
-        root.setup()
+    with root.context(host, port):
         root.mainloop()
 
 if __name__ == "__main__":

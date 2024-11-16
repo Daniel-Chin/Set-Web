@@ -1,28 +1,26 @@
 from __future__ import annotations
 
 import typing as tp
-from dataclasses import dataclass, asdict
-from enum import Enum
-
-from uuid import UUID
+from dataclasses import dataclass, asdict, field
 
 from shared import *
 
-@dataclass
+@dataclass()
 class Player:
-    uuid: UUID
+    uuid: str
     name: str
     color: str
     voting: Vote = Vote.IDLE
     shouted_set: tp.Optional[float] = None  # timestamp
     wealth_thickness: int = 0
     n_of_wins: int = 0
-    display_case: tp.List[SmartCard] = []
+    display_case: tp.List[SmartCard] = field(default_factory=list)
     display_case_hidden: bool = False
 
     def toPrimitive(self):
         d = asdict(self)
         d['display_case'] = [card.toPrimitive() for card in self.display_case]
+        d['voting'] = self.voting.value
         return d
     
     @classmethod
@@ -39,11 +37,11 @@ class Player:
             display_case_hidden=d['display_case_hidden'], 
         )
 
-@dataclass
+@dataclass()
 class SmartCard:
     card: Card
-    selected_by: tp.List[UUID] = []
     birth: float
+    selected_by: tp.List[str] = field(default_factory=list)
 
     def toPrimitive(self):
         d = asdict(self)
@@ -59,11 +57,11 @@ class SmartCard:
         card = (int(s[0]) % 3, int(s[0]) // 3, int(s[1]) % 3, int(s[1]) // 3)
         return cls(
             card=card, 
-            selected_by=d['selected_by'], 
             birth=d['birth'], 
+            selected_by=d['selected_by'], 
         )
 
-@dataclass
+@dataclass()
 class Gamestate:
     cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool]
     players: tp.List[Player]
@@ -95,10 +93,10 @@ class Gamestate:
     
     def toPrimitive(self):
         d = asdict(self)
-        def bools():
-            for idx in iterAllCards():
-                yield self.cards_in_deck[idx]
-        d['cards_in_deck'] = boolsToBytes(bools())
+        cards_in_deck = []
+        for idx in iterAllCards():
+            cards_in_deck.append('t' if self.cards_in_deck[idx] else 'f')
+        d['cards_in_deck'] = cards_in_deck
         d['players'] = [player.toPrimitive() for player in self.players]
         d['public_zone'] = [[
             card.toPrimitive() for card in row
@@ -108,8 +106,8 @@ class Gamestate:
     @classmethod
     def fromPrimitive(cls, d: dict):
         cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool] = {}
-        for idx, bool_ in zip(iterAllCards(), bytesToBools(d['cards_in_deck'])):
-            cards_in_deck[idx] = bool_
+        for idx, char in zip(iterAllCards(), d['cards_in_deck']):
+            cards_in_deck[idx] = char == 't'
         return cls(
             cards_in_deck=cards_in_deck, 
             players=[Player.fromPrimitive(player) for player in d['players']], 
@@ -120,7 +118,7 @@ class Gamestate:
             public_zone_n_rows=d['public_zone_n_rows'], 
         )
     
-    def seekPlayer(self, uuid: UUID):
+    def seekPlayer(self, uuid: str):
         for player in self.players:
             if player.uuid == uuid:
                 return player
