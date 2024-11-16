@@ -25,12 +25,11 @@
         - select card
       - display
         - heat, selected by
-    - archive
     - vote
 - "Set!" button
   - cancel
 - vote accept button
-  - only when exactly 1 player selected some cards
+  - only when exactly 1 player is "set!!!"
   - selection change leads to input deadzone
 - undo button
 - clear vote

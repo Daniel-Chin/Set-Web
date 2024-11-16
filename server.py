@@ -58,12 +58,23 @@ class Server:
                 print('server closing... ', end='', flush=True)
         print('ok')
     
+    def gamestatePacket(self):
+        self.gamestate.validate()
+        payload = gzip.compress(json.dumps(
+            self.gamestate.toPrimitive(), 
+        ).encode()) + b'\x00'
+        return payload
+
+    async def sendGamestate(
+        self, writer: StreamWriter, cached_payload: bytes | None = None, 
+    ):
+        writer.write(cached_payload or self.gamestatePacket())
+    
     async def broadcastGamestate(self):
+        payload = self.gamestatePacket()
         for uuid, writer in self.clients.items():
             try:
-                writer.write(gzip.compress(json.dumps(
-                    self.gamestate.toPrimitive(), 
-                ).encode()) + b'\x00')
+                await self.sendGamestate(writer, payload)
                 # await writer.drain()
             except Exception as e:
                 print('broadcast failed on', uuid, ':', e)
@@ -74,6 +85,9 @@ class Server:
             uuid, f'Player {len(self.gamestate.players)}', 
             f'{random.randint(0, 255)},{random.randint(0, 255)},{random.randint(0, 255)}', 
         ))
+        writer = self.clients[uuid]
+        writer.write(json.dumps(uuid).encode() + b'\x00')
+        self.sendGamestate(writer)
     
     async def onPlayerLeave(self, uuid: UUID):
         self.gamestate.players = [p for p in self.gamestate.players if p.uuid != uuid]

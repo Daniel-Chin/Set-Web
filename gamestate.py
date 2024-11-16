@@ -8,11 +8,6 @@ from uuid import UUID
 
 from shared import *
 
-class Vote(Enum):
-    IDLE = 'IDLE'
-    NEW_GAME = 'NEW_GAME'
-    ACCEPT = 'ACCEPT'
-
 @dataclass
 class Player:
     uuid: UUID
@@ -70,11 +65,23 @@ class SmartCard:
 
 @dataclass
 class Gamestate:
-    cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool] = {}
-    players: tp.List[Player] = []
-    public_zone: tp.List[SmartCard] = []
-    public_zone_n_cols: int = 4
-    public_zone_n_rows: int = 3
+    cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool]
+    players: tp.List[Player]
+    public_zone: tp.List[tp.List[SmartCard]]
+    public_zone_n_rows: int
+    public_zone_n_cols: int
+
+    @classmethod
+    def default(cls):
+        n_rows = 3
+        n_cols = 4
+        return cls(
+            cards_in_deck=dict.fromkeys(iterAllCards(), True), 
+            players=[], 
+            public_zone=[[] for _ in range(n_rows)], 
+            public_zone_n_rows=n_rows, 
+            public_zone_n_cols=n_cols, 
+        )
 
     def validate(self):
         n_set = 0
@@ -93,7 +100,9 @@ class Gamestate:
                 yield self.cards_in_deck[idx]
         d['cards_in_deck'] = boolsToBytes(bools())
         d['players'] = [player.toPrimitive() for player in self.players]
-        d['public_zone'] = [card.toPrimitive() for card in self.public_zone]
+        d['public_zone'] = [[
+            card.toPrimitive() for card in row
+        ] for row in self.public_zone]
         return d
     
     @classmethod
@@ -104,7 +113,15 @@ class Gamestate:
         return cls(
             cards_in_deck=cards_in_deck, 
             players=[Player.fromPrimitive(player) for player in d['players']], 
-            public_zone=[SmartCard.fromPrimitive(card) for card in d['public_zone']], 
+            public_zone=[[
+                SmartCard.fromPrimitive(card) for card in row
+            ] for row in d['public_zone']],
             public_zone_n_cols=d['public_zone_n_cols'], 
             public_zone_n_rows=d['public_zone_n_rows'], 
         )
+    
+    def seekPlayer(self, uuid: UUID):
+        for player in self.players:
+            if player.uuid == uuid:
+                return player
+        raise KeyError(f'{uuid} not present')

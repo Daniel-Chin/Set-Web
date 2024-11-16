@@ -1,6 +1,7 @@
 import typing as tp
 import random
 import os
+from enum import Enum
 
 Card = tp.Tuple[int, int, int, int]
 
@@ -45,6 +46,22 @@ def iterAllCards():
             for n in range(3):
                 for s in range(3):
                     yield (c, f, n, s)
+
+class Vote(Enum):
+    IDLE = 'IDLE'
+    NEW_GAME = 'NEW_GAME'
+    ACCEPT = 'ACCEPT'
+    UNDO = 'UNDO'
+
+class ClientEventFields(Enum):
+    TYPE = 'type'
+    HASH = 'gamestate_hash'
+    VOTE = 'vote'
+
+class ClientEventType(Enum):
+    VOTE = 'VOTE'
+    CALL_SET = 'CALL_SET'
+    CANCEL_CALL_SET = 'CANCEL_CALL_SET'
 
 if __name__ == '__main__':
     testBitsConversion()
