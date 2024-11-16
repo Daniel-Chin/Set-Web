@@ -121,8 +121,10 @@ class Root(tk.Tk):
         self.setup()
     
     def onDisconnect(self):
-        messagebox.showerror('Error: Server disconnected', 'Server disconneted!')
-        self.quit()
+        def f():
+            messagebox.showerror('Error: Server disconnected', 'Server disconneted!')
+            self.quit()
+        self.after_idle(f)
     
     def getMyself(self):
         return self.gamestate.seekPlayer(self.uuid)

@@ -47,7 +47,10 @@ class Server:
             self.clients.pop(uuid)
             writer.close()
             await self.broadcastGamestate()
-            await writer.wait_closed()
+            try:
+                await writer.wait_closed()
+            except ConnectionResetError:
+                pass
             print('ok')
 
     async def start(self):
