@@ -1,0 +1,37 @@
+## client GUI
+- deck
+  - deal 1 card
+  - vote: collect all cards and reset deck
+- public zone
+  - card
+    - display
+      - who selected
+      - heat: just dealt?
+    - control
+      - select
+  - control
+    - row, col
+- player zone
+  - claimed set? timestamp
+  - thiccness
+  - number of wins
+  - me = first
+    - control
+      - change name, color
+  - others
+    - on-display
+      - control
+        - hide/show
+      - display
+        - heat
+    - archive
+    - vote
+- "Set!" button
+  - cancel
+- keybindings cheatsheet (?)
+- vote accept button
+  - only when exactly 1 player selected some cards
+  - selection change leads to input deadzone
+- undo button
+- clear vote
+- vote reveal wealth
