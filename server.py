@@ -111,7 +111,10 @@ class Server:
 
 def main():
     server = Server()
-    asyncio.run(server.start())
+    try:
+        asyncio.run(server.start())
+    except KeyboardInterrupt:
+        print('bye')
 
 if __name__ == '__main__':
     main()

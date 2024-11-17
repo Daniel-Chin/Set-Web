@@ -62,16 +62,15 @@ class Root(tk.Tk):
         self.uuid = uuid
         self.gamestate = gamestate
         self.lock = threading.Lock()
+        self.is_closed = False
 
         self.setup()
     
     async def asyncMainloop(self):
-        do_continue = True
         def onClose():
-            nonlocal do_continue
-            do_continue = False
+            self.is_closed = True
         self.protocol("WM_DELETE_WINDOW", onClose)
-        while do_continue:
+        while not self.is_closed:
             self.processQueue()
             self.update()
             next_update_time = time.time() + 1 / FPS
@@ -105,7 +104,7 @@ class Root(tk.Tk):
         print(msg)
         def f():
             messagebox.showerror(msg, msg)
-            self.quit()
+            self.is_closed = True
         self.after_idle(f)
     
     def getMyself(self):
