@@ -11,7 +11,10 @@ from tkinter import ttk
 from tkinter import messagebox
 
 from shared import *
-from shared import ClientEventType as ET, ClientEventFields as EF
+from shared import (
+    ServerEventType as SET, ServerEventField as SEF,
+    ClientEventType as CET, ClientEventField as CEF, 
+)
 from gamestate import *
 
 FPS = 30
@@ -83,11 +86,27 @@ class Root(tk.Tk):
             if event is None:
                 self.onUnexpectedDisconnect()
                 break
-            self.onUpdateGamestate(Gamestate.fromPrimitive(event))
+            type_ = SET(event[SEF.TYPE])
+            if type_ == SET.GAMESTATE:
+                self.onUpdateGamestate(Gamestate.fromPrimitive(event))
+            elif type_ == SET.YOU_ARE:
+                assert False
+            elif type_ == SET.POPUP_MESSAGE:
+                title, msg = event[SEF.CONTENT]
+                print('>>>>>> Message from server')
+                print(title)
+                print(msg)
+                print('<<<<<<')
+                def f():
+                    messagebox.showinfo(title, msg)
+                self.after_idle(f)
+            else:
+                raise ValueError(f'Unexpected event type: {type_}')
     
     def submit(self, event: tp.Dict):
-        event[EF.HASH] = self.gamestate.mutableHash()
-        sendPrimitive(event, self.writer)
+        event[CEF.HASH] = self.gamestate.mutableHash()
+        co = sendPrimitive(event, self.writer)
+        asyncio.create_task(co)
     
     def setup(self):
         self.title("Web Set")
@@ -159,20 +178,20 @@ class BottomPanel(ttk.Frame):
         col += 1
 
     def clearMyVote(self):
-        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.IDLE })
+        self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
 
     def callSet(self):
         with self.root.lock:
             if self.root.getMyself().shouted_set is None:
-                self.root.submit({ EF.TYPE: ET.CALL_SET })
+                self.root.submit({ CEF.TYPE: CET.CALL_SET })
             else:
-                self.root.submit({ EF.TYPE: ET.CANCEL_CALL_SET })
+                self.root.submit({ CEF.TYPE: CET.CANCEL_CALL_SET })
     
     def voteAccept(self):
-        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.ACCEPT })
+        self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.ACCEPT })
     
     def voteUndo(self):
-        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.UNDO })
+        self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.UNDO })
     
     def refresh(self):
         if self.root.getMyself().shouted_set is None:

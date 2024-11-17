@@ -33,4 +33,4 @@
   - selection change leads to input deadzone
 - undo button
 - clear vote
-- vote reveal wealth
+- vote count cards

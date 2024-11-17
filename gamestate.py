@@ -93,34 +93,36 @@ class Gamestate:
             tuple([tuple([sC and sC.mutableHash() for sC in row]) for row in self.public_zone]),
         ))
 
+    @staticmethod
+    def fullDeck():
+        return dict.fromkeys(iterAllCards(), True)
+    
     @classmethod
     def default(cls):
         return cls(
-            cards_in_deck=dict.fromkeys(iterAllCards(), True), 
+            cards_in_deck=cls.fullDeck(), 
             players=[], 
             public_zone=[[None] * 4 for _ in range(3)], 
         )
 
-    def validate(self):
-        n_set = 0
+    def uniqueShoutSetPlayer(self):
+        who = None
         for player in self.players:
             if player.shouted_set is not None:
-                n_set += 1
-        if n_set != 1:
-            for player in self.players:
-                if player.voting == Vote.ACCEPT:
-                    player.voting = Vote.IDLE
-        for row in self.public_zone:
-            for card in row:
-                if card is None:
-                    continue
-                card.selected_by = self.filterByUsers(card.selected_by)
-        for player in self.players:
-            for card in player.display_case:
-                card.selected_by = self.filterByUsers(card.selected_by)
+                if who is None:
+                    who = player
+                else:
+                    return None
+        return who
+    
+    def validate(self):
+        # if self.uniqueShoutSetPlayer() is None:
+        #     self.clearVoteAccept()
+        for card in self.AllSmartCards():
+            card.selected_by = self.filterByUsers(card.selected_by)
     
     def filterByUsers(self, uuids: tp.List[str]):
-        return [uuid for uuid in uuids if uuid in [player.uuid for player in self.players]]
+        return [uuid for uuid in uuids if uuid in self.getUuids()]
     
     def toPrimitive(self):
         d = asdict(self)
@@ -152,3 +154,20 @@ class Gamestate:
             if player.uuid == uuid:
                 return player
         raise KeyError(f'{uuid} not present')
+    
+    def getUuids(self):
+        return [player.uuid for player in self.players]
+    
+    def clearVoteAccept(self):
+        for player in self.players:
+            if player.voting == Vote.ACCEPT:
+                player.voting = Vote.IDLE
+    
+    def AllSmartCards(self):
+        for row in self.public_zone:
+            for card in row:
+                if card is not None:
+                    yield card
+        for player in self.players:
+            for card in player.display_case:
+                yield card

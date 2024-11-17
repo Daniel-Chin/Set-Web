@@ -3,19 +3,48 @@ import asyncio
 from asyncio import StreamReader, StreamWriter
 import random
 import time
+import copy
+import io
 
 from uuid import uuid4
 
 from shared import *
-from shared import ClientEventType as ET, ClientEventFields as EF
+from shared import (
+    ServerEventType as SET, ServerEventField as SEF,
+    ClientEventType as CET, ClientEventField as CEF, 
+)
 from gamestate import *
 
 class HashMismatchError(Exception): pass
+
+class UndoTape:
+    def __init__(self, max_size: int = 64):
+        self.max_size = max_size
+        self.tape: tp.List[Gamestate] = []
+    
+    def recordNewState(self, gamestate: Gamestate):
+        self.tape.append(copy.deepcopy(gamestate))
+        if len(self.tape) > self.max_size:
+            self.tape.pop(0)
+    
+    def undo(self, current: Gamestate):
+        try:
+            memory = self.tape.pop()
+        except IndexError:
+            print('Warning: undo failed --- tape is empty')
+            return current
+        if memory.getUuids() != current.getUuids():
+            print('Warning: undo failed --- undo past player join/leave is not supported')
+            self.tape.clear()
+            return current
+        return memory
 
 class Server:
     def __init__(self):
         self.port = int(input('Port > '))
         self.gamestate = Gamestate.default()
+        self.undoTape = UndoTape()
+        self.undoTape.recordNewState(self.gamestate)
         self.writers: tp.Dict[str, StreamWriter] = {}
         self.time_of_last_harvest = time.time()
 
@@ -35,7 +64,7 @@ class Server:
                     print(f'Client {addr} disconnected')
                     await self.onPlayerLeave(uuid)
                     self.writers.pop(uuid)
-                    await self.broadcastGamestate()
+                    await self.broadcast(self.gamestatePacket())
                     break
                 await self.handleEvent(uuid, event)
         except asyncio.CancelledError:
@@ -64,21 +93,20 @@ class Server:
     
     def gamestatePacket(self):
         self.gamestate.validate()
-        return primitiveToPayload(
-            self.gamestate.toPrimitive(), 
-        )
+        return primitiveToPayload({
+            SEF.TYPE: SET.GAMESTATE,
+            SEF.CONTENT: self.gamestate.toPrimitive(), 
+        })
 
-    def sendGamestate(
+    async def sendGamestate(
         self, writer: StreamWriter, cached_payload: bytes | None = None, 
     ):
-        sendPayload(cached_payload or self.gamestatePacket(), writer)
+        await sendPayload(cached_payload or self.gamestatePacket(), writer)
     
-    async def broadcastGamestate(self):
-        payload = self.gamestatePacket()
+    async def broadcast(self, payload: bytes):
         for uuid, writer in self.writers.items():
             try:
-                self.sendGamestate(writer, payload)
-                # await writer.drain()
+                await self.sendGamestate(writer, payload)
             except Exception as e:
                 print('broadcast failed on', uuid, ':', e)
                 continue
@@ -89,9 +117,11 @@ class Server:
             f'{random.randint(0, 255)},{random.randint(0, 255)},{random.randint(0, 255)}', 
         ))
         writer = self.writers[uuid]
-        sendPrimitive(uuid, writer)
-        self.sendGamestate(writer)
-        # await writer.drain()
+        await sendPrimitive({
+            SEF.TYPE: SET.YOU_ARE,
+            SEF.CONTENT: uuid,
+        }, writer)
+        await self.sendGamestate(writer)
         self.gamestate.validate()
     
     async def onPlayerLeave(self, uuid: str):
@@ -99,62 +129,102 @@ class Server:
         self.gamestate.validate()
     
     def checkHash(self, event: dict):
-        if event[EF.HASH] != self.gamestate.mutableHash():
-            print('Gamestate hash mismatch. Dropping client event:', event[EF.TYPE])
+        if event[CEF.HASH] != self.gamestate.mutableHash():
+            print('Gamestate hash mismatch. Dropping client event:', event[CEF.TYPE])
             raise HashMismatchError()
     
     async def handleEvent(self, uuid: str, event: dict):
-        type_ = ET(event[EF.TYPE])
+        type_ = CET(event[CEF.TYPE])
         myself = self.gamestate.seekPlayer(uuid)
         try:
-            if   type_ == ET.VOTE:
+            if   type_ == CET.VOTE:
                 self.checkHash(event)
-                myself.voting = Vote(event[EF.VOTE])
-                ... # voting logic
-                # dont forget to set self.time_of_last_harvest
-            elif type_ == ET.CALL_SET:
+                myself.voting = Vote(event[CEF.VOTE])
+                if (
+                    myself.voting == Vote.ACCEPT and 
+                    self.gamestate.uniqueShoutSetPlayer() is None
+                ):
+                    myself.voting = Vote.IDLE
+                await self.resolveVotes()
+            elif type_ == CET.CALL_SET:
                 self.checkHash(event)
                 myself.shouted_set = time.time() - self.time_of_last_harvest
-            elif type_ == ET.CANCEL_CALL_SET:
+                self.gamestate.clearVoteAccept()
+            elif type_ == CET.CANCEL_CALL_SET:
                 self.checkHash(event)
                 myself.shouted_set = None
-            elif type_ == ET.CHANGE_NAME:
-                value = event[EF.TARGET_VALUE]
+                self.gamestate.clearVoteAccept()
+            elif type_ == CET.CHANGE_NAME:
+                value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, str)
                 myself.name = value
-            elif type_ == ET.CHANGE_COLOR:
-                value = event[EF.TARGET_VALUE]
+            elif type_ == CET.CHANGE_COLOR:
+                value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, str)
                 myself.color = value
-            elif type_ == ET.TOGGLE_DISPLAY_CASE_VISIBLE:
-                target_uuid = event[EF.TARGET_PLAYER]
+            elif type_ == CET.TOGGLE_DISPLAY_CASE_VISIBLE:
+                target_uuid = event[CEF.TARGET_PLAYER]
                 player = self.gamestate.seekPlayer(target_uuid)
                 player.display_case_hidden = not player.display_case_hidden
-            elif type_ == ET.ACC_N_WINS:
-                target_uuid = event[EF.TARGET_PLAYER]
+            elif type_ == CET.ACC_N_WINS:
+                target_uuid = event[CEF.TARGET_PLAYER]
                 player = self.gamestate.seekPlayer(target_uuid)
-                value = event[EF.TARGET_VALUE]
+                value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, int)
                 player.n_of_wins += value
-            elif type_ == ET.ACC_PUBLIC_ZONE_SHAPE:
-                value = event[EF.TARGET_VALUE]
+            elif type_ == CET.ACC_PUBLIC_ZONE_SHAPE:
+                value = event[CEF.TARGET_VALUE]
                 self.reshapePublicZone(*value)
-            elif type_ == ET.TOGGLE_SELECT_CARD_PUBLIC:
-                x, y = event[EF.TARGET_VALUE]
+            elif type_ == CET.TOGGLE_SELECT_CARD_PUBLIC:
+                x, y = event[CEF.TARGET_VALUE]
                 assert isinstance(x, int) and isinstance(y, int)
                 card = self.gamestate.public_zone[x][y]
                 if card is None:
                     print(f'Warning: {myself} tried to toggle an empty card slot')
                     return
                 card.toggle(uuid)
-            elif type_ == ET.TOGGLE_SELECT_CARD_DISPLAY:
-                target_uuid = event[EF.TARGET_PLAYER]
+                self.gamestate.clearVoteAccept()
+            elif type_ == CET.TOGGLE_SELECT_CARD_DISPLAY:
+                target_uuid = event[CEF.TARGET_PLAYER]
                 player = self.gamestate.seekPlayer(target_uuid)
-                x = event[EF.TARGET_VALUE]
+                x = event[CEF.TARGET_VALUE]
                 assert isinstance(x, int)
                 card = player.display_case[x]
                 card.toggle(uuid)
-            await self.broadcastGamestate()
+                self.gamestate.clearVoteAccept()
+            elif type_ == CET.CLEAR_MY_SELECTIONS:
+                for card in self.gamestate.AllSmartCards():
+                    if uuid in card.selected_by:
+                        card.selected_by.remove(uuid)
+            elif type_ == CET.DEAL_CARD:
+                # self.checkHash(event) # checking hash would prevent rapid dealing.
+                remaining: tp.List[Card] = []
+                for idx in iterAllCards():
+                    if self.gamestate.cards_in_deck[idx]:
+                        remaining.append(idx)
+                if not remaining:
+                    print(f'Warning: {uuid} tried to deal a card from the empty deck')
+                    return
+                vacant = None
+                for y, row in enumerate(self.gamestate.public_zone):
+                    for x, card in enumerate(row):
+                        if card is None:
+                            vacant = (x, y)
+                            break
+                    else:
+                        continue
+                    break
+                if vacant is None:
+                    print(f'Warning: {uuid} tried to deal a card into the full public zone')
+                    return
+                card = random.choice(remaining)
+                self.gamestate.cards_in_deck[card] = False
+                self.gamestate.public_zone[vacant[1]][vacant[0]] = SmartCard(
+                    card, time.time(), 
+                )
+            else:
+                raise ValueError(f'Unknown event type: {type_}')
+            await self.broadcast(self.gamestatePacket())
         except HashMismatchError:
             pass
     
@@ -192,6 +262,71 @@ class Server:
                 continue
             break
         assert not stashed
+    
+    async def resolveVotes(self):
+        # dont forget to set self.time_of_last_harvest
+        votes: tp.Set[Vote] = set()
+        for players in self.gamestate.players:
+            votes.add(players.voting)
+        if len(votes) != 1:
+            return
+        consensus = votes.pop()
+        for winner in self.gamestate.players:
+            winner.voting = Vote.IDLE
+        if consensus == Vote.IDLE:
+            return
+        elif consensus == Vote.NEW_GAME:
+            self.gamestate.cards_in_deck = Gamestate.fullDeck()
+            for row in self.gamestate.public_zone:
+                for i in range(len(row)):
+                    row[i] = None
+            for winner in self.gamestate.players:
+                winner.voting = Vote.IDLE
+                winner.shouted_set = None
+                winner.wealth_thickness = 0
+                winner.display_case.clear()
+            self.time_of_last_harvest = time.time()
+            self.undoTape.recordNewState(self.gamestate)
+        elif consensus == Vote.UNDO:
+            self.time_of_last_harvest = time.time()
+            self.gamestate = self.undoTape.undo(self.gamestate)
+        elif consensus == Vote.ACCEPT:
+            winner = self.gamestate.uniqueShoutSetPlayer()
+            assert winner is not None
+            the_set: tp.List[SmartCard] = []
+            for row in self.gamestate.public_zone:
+                for i, card in enumerate(row):
+                    if card is None:
+                        continue
+                    if winner.uuid in card.selected_by:
+                        the_set.append(card)
+                        row[i] = None
+            for player in self.gamestate.players:
+                for card in player.display_case:
+                    if winner.uuid in card.selected_by:
+                        the_set.append(card)
+                    else:
+                        winner.wealth_thickness += 1
+                player.display_case.clear()
+            for card in the_set:
+                card.selected_by.remove(winner.uuid)
+                card.birth = time.time()
+                winner.display_case.append(card)
+            self.time_of_last_harvest = time.time()
+            self.undoTape.recordNewState(self.gamestate)
+        elif consensus == Vote.COUNT_CARDS:
+            buf = io.StringIO()
+            for player in self.gamestate.players:
+                score = player.wealth_thickness + len(player.display_case)
+                print(player.name, ':', score, file=buf)
+            buf.seek(0)
+            payload = primitiveToPayload({
+                SEF.TYPE: SET.POPUP_MESSAGE,
+                SEF.CONTENT: ('Count cards', buf.read()),
+            })
+            await self.broadcast(payload)
+        else:
+            raise ValueError(f'Unknown vote: {consensus}')
 
 def main():
     server = Server()

@@ -57,8 +57,18 @@ class Vote(str, Enum):
     NEW_GAME = 'NEW_GAME'
     ACCEPT = 'ACCEPT'
     UNDO = 'UNDO'
+    COUNT_CARDS = 'COUNT_CARDS'
 
-class ClientEventFields(str, Enum):
+class ServerEventField(str, Enum):
+    TYPE = 'type'
+    CONTENT = 'content'
+
+class ServerEventType(str, Enum):
+    GAMESTATE = 'GAMESTATE'
+    YOU_ARE = 'YOU_ARE'
+    POPUP_MESSAGE = 'POPUP_MESSAGE'
+
+class ClientEventField(str, Enum):
     TYPE = 'type'
     HASH = 'gamestate_hash'
     VOTE = 'vote'
@@ -76,19 +86,22 @@ class ClientEventType(str, Enum):
     ACC_PUBLIC_ZONE_SHAPE = 'ACC_PUBLIC_ZONE_SHAPE'
     TOGGLE_SELECT_CARD_PUBLIC = 'TOGGLE_SELECT_CARD_PUBLIC'
     TOGGLE_SELECT_CARD_DISPLAY = 'TOGGLE_SELECT_CARD_DISPLAY'
+    CLEAR_MY_SELECTIONS = 'CLEAR_MY_SELECTIONS'
+    DEAL_CARD = 'DEAL_CARD'
 
-def sendPayload(payload: bytes, writer: asyncio.StreamWriter):
+async def sendPayload(payload: bytes, writer: asyncio.StreamWriter):
     prefix = format(len(payload), f'0{PACKET_LEN_PREFIX_LEN}d').encode()
     assert len(prefix) <= PACKET_LEN_PREFIX_LEN
     writer.write(prefix)
     writer.write(payload)
+    await writer.drain()
 
 def primitiveToPayload(x, /):
     payload = gzip.compress(json.dumps(x).encode())
     return payload
 
-def sendPrimitive(x, /, writer: asyncio.StreamWriter):
-    sendPayload(primitiveToPayload(x), writer)
+async def sendPrimitive(x, /, writer: asyncio.StreamWriter):
+    await sendPayload(primitiveToPayload(x), writer)
 
 async def recvPrimitive(reader: asyncio.StreamReader):
     prefix = await reader.readexactly(PACKET_LEN_PREFIX_LEN)
