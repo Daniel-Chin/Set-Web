@@ -192,3 +192,9 @@ class Gamestate:
         print('Gamestate:')
         print('hash', self.mutableHash(verbose=True))
         pprint(self)
+    
+    def isCardSelectionEqual(self, other: Gamestate):
+        for a, b in zip(self.AllSmartCards(), other.AllSmartCards()):
+            if a.card != b.card or a.selected_by != b.selected_by:
+                return False
+        return True

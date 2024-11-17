@@ -122,7 +122,7 @@ class Server:
     async def onPlayerJoin(self, uuid: str):
         self.gamestate.players.append(Player(
             str(uuid), f'Player {len(self.gamestate.players)}', 
-            f'{random.randint(0, 255)},{random.randint(0, 255)},{random.randint(0, 255)}', 
+            f'{random.randint(0, 100)},{random.randint(0, 100)},{random.randint(0, 100)}', 
         ))
         writer = self.writers[uuid]
         await sendPrimitive({
@@ -170,7 +170,15 @@ class Server:
             elif type_ == CET.CHANGE_COLOR:
                 value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, str)
-                myself.color = value
+                try:
+                    r, g, b = [int(x.strip()) for x in value.split(',')]
+                    assert r in range(256)
+                    assert g in range(256)
+                    assert b in range(256)
+                except Exception as e:
+                    print(f'Warning: {uuid} submitted invalid color: "{value}", resulting in {e}')
+                    return
+                myself.color = f'{r},{g},{b}'
             elif type_ == CET.TOGGLE_DISPLAY_CASE_VISIBLE:
                 target_uuid = event[CEF.TARGET_PLAYER]
                 player = self.gamestate.seekPlayer(target_uuid)

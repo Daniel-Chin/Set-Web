@@ -9,6 +9,7 @@ import time
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+from tkinter import simpledialog
 
 from shared import *
 from shared import (
@@ -16,6 +17,8 @@ from shared import (
     ClientEventType as CET, ClientEventField as CEF, 
 )
 from gamestate import *
+
+ALLOW_ACCEPT_AFTER_CHANGE = 1 # sec
 
 FPS = 30
 
@@ -66,6 +69,7 @@ class Root(tk.Tk):
         self.gamestate = gamestate
         self.lock = threading.Lock()
         self.is_closed = False
+        self.last_info_change = 0
 
         self.setup()
     
@@ -111,12 +115,17 @@ class Root(tk.Tk):
     def setup(self):
         self.title("Web Set")
         self.bottomPanel = BottomPanel(self, self)
+        upperBody = ttk.Frame(self)
+        upperBody.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.leftPanel = LeftPanel(self, upperBody)
         self.refresh()
     
     def onUpdateGamestate(self, gamestate: Gamestate):
         with self.lock:
+            if not self.gamestate.isCardSelectionEqual(gamestate):
+                self.last_info_change = time.time()
             self.gamestate = gamestate
-            ... # update GUI
+            self.refresh()
     
     def onUnexpectedDisconnect(self):
         msg = 'Error: Unexpected disconnection by server.'
@@ -131,6 +140,7 @@ class Root(tk.Tk):
     
     def refresh(self):
         self.bottomPanel.refresh()
+        self.leftPanel.refresh()
         ...
 
 class BottomPanel(ttk.Frame):
@@ -138,6 +148,7 @@ class BottomPanel(ttk.Frame):
         super().__init__(parent)
         self.root = root
         self.pack(side=tk.BOTTOM, fill=tk.X)
+        self.config(borderwidth=1, relief=tk.SOLID)
 
         self.buttonClearMyVote = ttk.Button(
             self, text='Clear My Vote', command=self.clearMyVote, 
@@ -179,6 +190,8 @@ class BottomPanel(ttk.Frame):
                 self.root.submit({ CEF.TYPE: CET.CANCEL_CALL_SET })
     
     def voteAccept(self):
+        if self.buttonVoteAccept['state'] == tk.DISABLED:
+            return
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.ACCEPT })
     
     def voteUndo(self):
@@ -189,6 +202,71 @@ class BottomPanel(ttk.Frame):
             self.buttonCallSet.config(text='Set!!!')
         else:
             self.buttonCallSet.config(text='Just kidding...')
+        disableIf(self.buttonClearMyVote, (
+            self.root.getMyself().voting == Vote.IDLE
+        ))
+        disableIf(self.buttonVoteUndo, (
+            self.root.getMyself().voting == Vote.UNDO
+        ))
+    
+    def update(self):
+        disableIf(self.buttonVoteAccept, (
+            time.time() - self.root.last_info_change < ALLOW_ACCEPT_AFTER_CHANGE
+        ) or self.root.getMyself().voting == Vote.ACCEPT)
+        super().update()
+
+class LeftPanel(ttk.Frame):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
+        super().__init__(parent)
+        self.root = root
+        self.pack(side=tk.LEFT, fill=tk.Y)
+        self.config(borderwidth=1, relief=tk.SOLID)
+
+        self.selfConfigBar = SelfConfigBar(root, self)
+    
+    def refresh(self):
+        ...
+
+class SelfConfigBar(ttk.Frame):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
+        super().__init__(parent)
+        self.root = root
+        self.pack(side=tk.TOP, fill=tk.X)
+        self.config(borderwidth=1, relief=tk.SOLID)
+
+        buttonChangeMyName = ttk.Button(
+            self, text='Change My Name', command=self.changeMyName, 
+        )
+        buttonChangeMyName.pack(
+            side=tk.LEFT, padx=PADX, pady=PADY, 
+        )
+
+        buttonChangeMyColor = ttk.Button(
+            self, text='Change My Color', command=self.changeMyColor, 
+        )
+        buttonChangeMyColor.pack(
+            side=tk.LEFT, padx=PADX, pady=PADY, 
+        )
+    
+    def changeMyName(self):
+        old_name = self.root.getMyself().name
+        new_name = simpledialog.askstring(
+            'Change My Name', 'Enter new name', initialvalue=old_name, 
+        )
+        if new_name is None:
+            return
+        self.root.submit({ CEF.TYPE: CET.CHANGE_NAME, CEF.TARGET_VALUE: new_name })
+    
+    def changeMyColor(self):
+        old_color = self.root.getMyself().color
+        new_color = simpledialog.askstring(
+            'Change My Color', 
+            'Enter new color "r,g,b", 0 <= each <= 255. Hint: use a dark color for better contrast.', 
+            initialvalue=old_color, 
+        )
+        if new_color is None:
+            return
+        self.root.submit({ CEF.TYPE: CET.CHANGE_COLOR, CEF.TARGET_VALUE: new_color })
 
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))

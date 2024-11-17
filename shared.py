@@ -7,6 +7,9 @@ import json
 import asyncio
 from hashlib import sha256
 
+import tkinter as tk
+import tkinter.ttk as ttk
+
 PACKET_LEN_PREFIX_LEN = 8
 
 Card = tp.Tuple[int, int, int, int]
@@ -112,6 +115,12 @@ async def recvPrimitive(reader: asyncio.StreamReader):
 
 def deterministicHash(x: tp.Any, /):
     return sha256(json.dumps(x).encode()).hexdigest()
+
+def disableIf(button: tk.Button | ttk.Button, condition: bool):
+    if condition:
+        button.config(state=tk.DISABLED)
+    else:
+        button.config(state=tk.NORMAL)
 
 if __name__ == '__main__':
     testBitsConversion()
