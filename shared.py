@@ -127,6 +127,9 @@ def disableIf(button: tk.Button | ttk.Button, condition: bool):
 def rgbToHex(r: int, g: int, b: int):
     return f'#{r:02x}{g:02x}{b:02x}'
 
+def rgbStrToHex(x: str, /):
+    return rgbToHex(*[int(e) for e in x.split(',')])
+
 if __name__ == '__main__':
     testBitsConversion()
     print('ok')
