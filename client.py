@@ -341,30 +341,39 @@ class PlayerStripe(ttk.Frame):
             anchor=tk.W,
             foreground='white', background='black',
         )
-        self.labelName.pack(side=tk.TOP, fill=tk.X, padx=PADX, pady=PADY)
+        self.labelName.pack(
+            side=tk.TOP, fill=tk.X, padx=PADX, pady=(PADY, 0), 
+            expand=True,
+        )
 
         self.labelShoutSet = ttk.Label(
             self.col_0, text='<shout_set>', 
             foreground='white', 
             anchor=tk.W,
         )
-        self.labelShoutSet.pack(side=tk.TOP, fill=tk.X, padx=PADX, pady=PADY)
+        self.labelShoutSet.pack(
+            side=tk.TOP, fill=tk.X, padx=PADX, pady=(0, 0), 
+            expand=True,
+        )
 
         self.labelVoting = ttk.Label(
             self.col_0, text='<voting>', 
             anchor=tk.W,
         )
-        self.labelVoting.pack(side=tk.TOP, fill=tk.X, padx=PADX, pady=PADY)
+        self.labelVoting.pack(
+            side=tk.TOP, fill=tk.X, padx=PADX, pady=(0, PADY), 
+            expand=True,
+        )
 
         self.displayCase = DisplayCase(root, self.col_1, player_i)
 
         self.thicknessIndicator = ThicknessIndicator(
             self.col_2, THICKNESS_INDICATOR_WEALTH, 
         )
-        self.thicknessIndicator.pack(side=tk.TOP, padx=PADX, pady=PADY)
+        self.thicknessIndicator.pack(side=tk.TOP, padx=PADX, pady=(PADY, 0))
 
         ttk.Label(self.col_2, text='Wins:', anchor=tk.W).pack(
-            side=tk.TOP, fill=tk.X, padx=PADX, pady=(PADY, 0),
+            side=tk.TOP, fill=tk.X, padx=PADX, pady=(0, 0),
         )
         
         self.winCounter = WinCounter(root, self.col_2, player_i)
@@ -403,19 +412,12 @@ class DisplayCase(ttk.Frame):
         self.config(borderwidth=1, relief=tk.SOLID)
         self.player_i = player_i
 
-        self.row_0 = ttk.Frame(self)
-        self.row_0.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        self.row_1 = ttk.Frame(self)
-        self.row_1.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
         self.smartCardWidgets = [
-            SmartCardWidget(root, p, False, (player_i, i), None)
-            for i, p in enumerate([
-                self.row_0, self.row_0, self.row_1, self.row_1, 
-            ])
+            SmartCardWidget(root, self, False, (player_i, i), None)
+            for i in range(4)
         ]
         [x.pack(
-            side=tk.LEFT, fill=tk.BOTH, expand=True,
+            side=tk.LEFT, fill=tk.Y,
         ) for x in self.smartCardWidgets]
     
     def refresh(self, player: Player):
