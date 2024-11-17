@@ -198,3 +198,6 @@ class Gamestate:
             if a.card != b.card or a.selected_by != b.selected_by:
                 return False
         return True
+    
+    def nCardsInDeck(self):
+        return sum(1 for v in self.cards_in_deck.values() if v)

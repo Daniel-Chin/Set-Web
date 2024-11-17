@@ -26,6 +26,8 @@ HEAT_LASTS_FOR = 3 # sec
 
 FPS = 30
 
+BOLD_STYLE = 'Bold.TLabel'
+
 @asynccontextmanager
 async def Network():
     url = input('Server (ip_addr:port) > ')
@@ -115,18 +117,28 @@ class Root(tk.Tk):
     
     def setup(self):
         self.texture = Texture(self)
-        self.title("Web Set")
+        self.title('Web Set')
         style = ttk.Style()
-        style.theme_use("clam")
+        style.theme_use('clam')
+        pad_kw = dict()
+        for style_name in (
+            'TLabel', 'TButton', 'TSpinbox',
+        ):
+            style.configure(
+                style_name, 
+                padding=(
+                    round(FONT_SIZE * 0.5), round(FONT_SIZE * 0.1), 
+                ),
+                font=(FONT, FONT_SIZE),
+            )
         defaultFont = font.nametofont("TkDefaultFont")
         defaultFont.configure(size=FONT_SIZE)
-        self.option_add("*TLabel.Font", defaultFont)
-        self.option_add("*TButton.Font", defaultFont)
-        self.option_add("*TSpinbox.Font", defaultFont)
-        style.configure("TSpinbox", arrowsize=FONT_SIZE)
-        style.configure("TLabel", padding=(
-            round(FONT_SIZE * 0.5), round(FONT_SIZE * 0.1), 
-        ))
+        self.option_add("*TSpinbox.Font", defaultFont)  # style.configure doesn't work for Spinbox
+        style.configure('TSpinbox', arrowsize=FONT_SIZE)
+        style.configure(
+            BOLD_STYLE, font=(FONT, FONT_SIZE, font.BOLD), 
+            **pad_kw, 
+        )
 
         self.bottomPanel = BottomPanel(self, self)
         upperBody = ttk.Frame(self)
@@ -240,6 +252,7 @@ class LeftPanel(ttk.Frame):
 
         self.selfConfigBar = SelfConfigBar(root, self)
         self.playerStripes: tp.List[PlayerStripe] = []
+        self.deckArea = DeckArea(root, self)
     
     def refresh(self):
         if len(self.playerStripes) != len(self.root.gamestate.players):
@@ -320,6 +333,7 @@ class PlayerStripe(ttk.Frame):
 
         self.labelShoutSet = ttk.Label(
             self.col_0, text='<shout_set>', 
+            foreground='white', 
             anchor=tk.W,
         )
         self.labelShoutSet.pack(side=tk.TOP, fill=tk.X, padx=PADX, pady=PADY)
@@ -345,9 +359,14 @@ class PlayerStripe(ttk.Frame):
         
         self.labelName.config(text=player.name)
         self.labelName.config(background=rgbStrToHex(player.color))
-        self.labelShoutSet.config(text=(
-            f'Set! {player.shouted_set:.2f} sec' if player.shouted_set is not None else ''
-        ))
+        self.labelShoutSet.config(
+            text=(
+                f'Set! {player.shouted_set:.2f} sec' if player.shouted_set is not None else ''
+            ), 
+            background=(
+                'black' if player.shouted_set is not None else 'white'
+            ),
+        )
         self.labelVoting.config(text=(
             '' if player.voting == Vote.IDLE else f'Voting: {player.voting.name}'
         ))
@@ -500,10 +519,11 @@ class ThicknessIndicator(tk.Canvas):
         self.delete('all')
         width = self.winfo_width()
         for i in range(n_cards):
-            y = i * 2 + 1
+            y = i * THICKNESS_INDICATOR_CARD_INTERVAL + 1
             self.create_line(
                 0, y, width, y, 
                 fill='black', 
+                width=THICKNESS_INDICATOR_CARD_THICKNESS, 
             )
 
 class WinCounter(ttk.Spinbox):
@@ -534,6 +554,60 @@ class WinCounter(ttk.Spinbox):
         if self.last_value != value:
             self.set(value)
             self.last_value = value
+
+class DeckArea(ttk.Frame):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
+        super().__init__(parent)
+        self.root = root
+        self.pack(side=tk.BOTTOM, fill=tk.X)
+        self.config(borderwidth=1, relief=tk.SOLID)
+
+        self.thicknessIndicator = ThicknessIndicator(
+            self, THICKNESS_INDICATOR_DECK, 
+        )
+        self.thicknessIndicator.pack(side=tk.LEFT, padx=PADX, pady=PADY)
+
+        rightHalf = ttk.Frame(self)
+        rightHalf.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.buttonDealCard = ttk.Button(
+            rightHalf, text='Deal 1 Card', command=self.dealCard, 
+        )
+        self.buttonDealCard.pack(
+            side=tk.TOP, padx=PADX, pady=PADY,
+        )
+
+        self.buttonCountCards = ttk.Button(
+            rightHalf, text='Count Cards', command=self.countCards,
+        )
+        self.buttonCountCards.pack(
+            side=tk.TOP, padx=PADX, pady=PADY,
+        )
+
+        self.buttonNewGame = ttk.Button(
+            rightHalf, text='New Game', command=self.newGame,
+        )
+        self.buttonNewGame.pack(
+            side=tk.TOP, padx=PADX, pady=PADY,
+        )
+    
+    def dealCard(self):
+        self.root.submit({ CEF.TYPE: CET.DEAL_CARD })
+    
+    def countCards(self):
+        self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.COUNT_CARDS })
+    
+    def newGame(self):
+        self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.NEW_GAME })
+    
+    def refresh(self):
+        self.thicknessIndicator.refresh(self.root.gamestate.nCardsInDeck())
+        disableIf(self.buttonCountCards, (
+            self.root.getMyself().voting == Vote.COUNT_CARDS
+        ))
+        disableIf(self.buttonNewGame, (
+            self.root.getMyself().voting == Vote.NEW_GAME
+        ))
 
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
