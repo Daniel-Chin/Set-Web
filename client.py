@@ -182,6 +182,26 @@ class Root(tk.Tk):
 
     def getPlayer(self, player_i: int):
         return self.gamestate.players[player_i]
+    
+    def newButton(
+        self, parent: tk.Widget | tk.Tk, text: str, 
+        command: tp.Callable, special_shortcut: str | None = None,
+    ):
+        if special_shortcut is not None:
+            key = special_shortcut
+            underline = -1
+        elif '_' in text:
+            left, right = text.split('_')
+            text = left + right
+            key = 'Alt-' + right[0].lower()
+            underline = len(left)
+        else:
+            key = None
+            underline = -1
+        button = ttk.Button(parent, text=text, command=command, underline=underline)
+        if key is not None:
+            self.bind(f'<{key}>', lambda _: button.invoke())
+        return button
 
 class BottomPanel(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
@@ -190,30 +210,31 @@ class BottomPanel(ttk.Frame):
         self.pack(side=tk.BOTTOM, fill=tk.X)
         self.config(borderwidth=1, relief=tk.SOLID)
 
-        self.buttonClearMyVote = ttk.Button(
-            self, text='Clear My Vote', command=self.clearMyVote, 
+        self.buttonClearMyVote = root.newButton(
+            self, text='Clear My Vote (ESC)', command=self.clearMyVote, 
+            special_shortcut='Escape', 
         )
         self.buttonClearMyVote.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
-        self.buttonCallSet = ttk.Button(
-            self, text='Set!!!', command=self.callSet, 
+        self.buttonCallSet = root.newButton(
+            self, text='_Set!!!', command=self.callSet, 
         )
         self.buttonCallSet.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
             expand=True, fill=tk.X,
         )
 
-        self.buttonVoteAccept = ttk.Button(
-            self, text='Vote Accept', command=self.voteAccept, 
+        self.buttonVoteAccept = root.newButton(
+            self, text='Vote _Accept', command=self.voteAccept, 
         )
         self.buttonVoteAccept.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
-        self.buttonVoteUndo = ttk.Button(
-            self, text='Vote Undo', command=self.voteUndo, 
+        self.buttonVoteUndo = root.newButton(
+            self, text='Vote _Undo', command=self.voteUndo, 
         )
         self.buttonVoteUndo.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
@@ -284,14 +305,14 @@ class SelfConfigBar(ttk.Frame):
         self.pack(side=tk.TOP, fill=tk.X)
         self.config(borderwidth=1, relief=tk.SOLID)
 
-        buttonChangeMyName = ttk.Button(
+        buttonChangeMyName = root.newButton(
             self, text='Change My Name', command=self.changeMyName, 
         )
         buttonChangeMyName.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
-        buttonChangeMyColor = ttk.Button(
+        buttonChangeMyColor = root.newButton(
             self, text='Change My Color', command=self.changeMyColor, 
         )
         buttonChangeMyColor.pack(
@@ -606,21 +627,21 @@ class DeckArea(ttk.Frame):
         rightHalf = ttk.Frame(self)
         rightHalf.pack(side=tk.LEFT, fill=tk.BOTH)
 
-        self.buttonDealCard = ttk.Button(
-            rightHalf, text='Deal 1 Card', command=self.dealCard, 
+        self.buttonDealCard = root.newButton(
+            rightHalf, text='_Deal 1 Card', command=self.dealCard, 
         )
         self.buttonDealCard.pack(
             side=tk.TOP, padx=PADX, pady=(PADY, 0), expand=True, fill=tk.X,
         )
 
-        self.buttonCountCards = ttk.Button(
+        self.buttonCountCards = root.newButton(
             rightHalf, text='Count Cards', command=self.countCards,
         )
         self.buttonCountCards.pack(
             side=tk.TOP, padx=PADX, pady=(PADY, 0), expand=True, fill=tk.X,
         )
 
-        self.buttonNewGame = ttk.Button(
+        self.buttonNewGame = root.newButton(
             rightHalf, text='New Game', command=self.newGame,
         )
         self.buttonNewGame.pack(
@@ -652,8 +673,9 @@ class PublicZoneTopPanel(ttk.Frame):
         self.pack(side=tk.TOP, fill=tk.X)
         self.config(borderwidth=1, relief=tk.SOLID)
 
-        self.buttonClearSelection = ttk.Button(
-            self, text='Clear Selection', command=self.clearSelection, 
+        self.buttonClearSelection = root.newButton(
+            self, text='Clear Selection (ESC)', command=self.clearSelection, 
+            special_shortcut='Escape',
         )
         self.buttonClearSelection.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
 
