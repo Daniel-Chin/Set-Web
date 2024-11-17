@@ -14,6 +14,8 @@ PACKET_LEN_PREFIX_LEN = 8
 
 Card = tp.Tuple[int, int, int, int]
 
+CARD_ASPECT = (43, 62)
+
 def boolsToBytes(bools: tp.Iterator[bool]) -> bytes:
     byte_array = bytearray()
     current_byte = 0
@@ -121,6 +123,9 @@ def disableIf(button: tk.Button | ttk.Button, condition: bool):
         button.config(state=tk.DISABLED)
     else:
         button.config(state=tk.NORMAL)
+
+def rgbToHex(r: int, g: int, b: int):
+    return f'#{r:02x}{g:02x}{b:02x}'
 
 if __name__ == '__main__':
     testBitsConversion()

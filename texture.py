@@ -8,9 +8,9 @@ from PIL import Image, ImageTk
 import tkinter as tk
 
 from shared import *
+from env_wrap import *
 
-CARD_ASPECT = (43, 62)
-SCALE = round(2160 / 3 / CARD_ASPECT[1])
+SCALE = round(TEXTURE_RESOLUTION / 3 / CARD_ASPECT[1])
 CARD_RESOLUTION = (CARD_ASPECT[0] * SCALE, CARD_ASPECT[1] * SCALE)
 
 SVG = './texture.svg'
@@ -40,7 +40,14 @@ class Texture:
             cropped = family_photo.crop(bboxOf(
                 c * 3 + f, n * 3 + s, 
             ))
-            self.photoImgs[(c, f, n, s)] = ImageTk.PhotoImage(cropped)
+            de_bordered = cropped.crop((
+                round(CARD_RESOLUTION[0] * 0.1),
+                round(CARD_RESOLUTION[1] * 0.1),
+                round(CARD_RESOLUTION[0] * 0.9),
+                round(CARD_RESOLUTION[1] * 0.9),
+            ))
+            resized = de_bordered.resize((CARD_WIDTH, CARD_HEIGHT))
+            self.photoImgs[(c, f, n, s)] = ImageTk.PhotoImage(resized)
     
     def get(self, c: int, f: int, n: int, s: int):
         return self.photoImgs[(c, f, n, s)]
@@ -58,7 +65,6 @@ def test():
         label = tk.Label(root, text=f'[{c=}, {f=}, {n=}, {s=}]')
         label.pack(side=tk.LEFT)
         img = texture.get(c, f, n, s)
-        # img = ImageTk.PhotoImage(texture.family_photo.crop(bboxOf(0,0)))
         label = tk.Label(root, image=img)   # type: ignore
         label.pack(side=tk.LEFT)
 

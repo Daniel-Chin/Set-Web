@@ -10,20 +10,21 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import simpledialog
+from uuid import uuid4
 
 from shared import *
 from shared import (
     ServerEventType as SET, ServerEventField as SEF,
     ClientEventType as CET, ClientEventField as CEF, 
 )
+from env_wrap import *
 from gamestate import *
+from texture import Texture
 
 ALLOW_ACCEPT_AFTER_CHANGE = 1 # sec
+HEAT_LASTS_FOR = 3 # sec
 
 FPS = 30
-
-PADX = 16
-PADY = 16
 
 @asynccontextmanager
 async def Network():
@@ -113,7 +114,10 @@ class Root(tk.Tk):
         asyncio.create_task(co)
     
     def setup(self):
+        self.texture = Texture(self)
         self.title("Web Set")
+        style = ttk.Style()
+        style.theme_use("clam")
         self.bottomPanel = BottomPanel(self, self)
         upperBody = ttk.Frame(self)
         upperBody.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -219,8 +223,7 @@ class LeftPanel(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
         super().__init__(parent)
         self.root = root
-        self.pack(side=tk.LEFT, fill=tk.Y)
-        self.config(borderwidth=1, relief=tk.SOLID)
+        self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.selfConfigBar = SelfConfigBar(root, self)
     
@@ -267,6 +270,128 @@ class SelfConfigBar(ttk.Frame):
         if new_color is None:
             return
         self.root.submit({ CEF.TYPE: CET.CHANGE_COLOR, CEF.TARGET_VALUE: new_color })
+
+class PlayerStripe(ttk.Frame):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk, uuid: str):
+        super().__init__(parent)
+        self.root = root
+        self.uuid = uuid
+        self.pack(side=tk.TOP, fill=tk.X)
+        self.config(borderwidth=1, relief=tk.SOLID)
+
+        self.col_0 = ttk.Frame(self)
+        self.col_0.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.col_1 = ttk.Frame(self)
+        self.col_1.pack(side=tk.LEFT, fill=tk.BOTH)
+        self.col_2 = ttk.Frame(self)
+        self.col_2.pack(side=tk.LEFT, fill=tk.BOTH)
+        
+        self.labelName = ttk.Label(self.col_0, text='<name>')
+        self.labelName.pack(side=tk.TOP, padx=PADX, pady=PADY)
+
+        self.labelShoutSet = ttk.Label(self.col_0, text='<shout_set>')
+        self.labelShoutSet.pack(side=tk.TOP, padx=PADX, pady=PADY)
+
+        self.labelVoting = ttk.Label(self.col_0, text='<voting>')
+        self.labelVoting.pack(side=tk.TOP, padx=PADX, pady=PADY)
+
+        ...
+
+    def getPlayer(self):
+        return self.root.gamestate.seekPlayer(self.uuid)
+    
+    def refresh(self):
+        ...
+
+class DisplayCase(ttk.Frame):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
+        super().__init__(parent)
+        self.root = root
+        self.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.config(borderwidth=1, relief=tk.SOLID)
+
+        self.row_0 = ttk.Frame(self)
+        self.row_0.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.row_1 = ttk.Frame(self)
+        self.row_1.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        ...
+
+class SmartCardWidget(ttk.Frame):
+    def __init__(
+        self, root: Root, parent: tk.Widget | tk.Tk, 
+        is_public_not_display_case: bool, 
+        coord: tp.Tuple[int, int] | int,
+        smartCard: SmartCard | None,
+    ):
+        self.unique_style_name = str(uuid4()) + '.TFrame'
+        super().__init__(parent, style=self.unique_style_name)
+        self.root = root
+        self.is_public_not_display_case = is_public_not_display_case
+        self.coord = coord
+        self.smartCard = smartCard
+
+        self.checksBar = ttk.Frame(self)
+        self.checksBar.pack(side=tk.TOP, pady=(PADY, 0))
+        self.checkLabels: tp.List[ttk.Label] = []
+    
+        if is_public_not_display_case:
+            card_width  = CARD_WIDTH
+            card_height = CARD_HEIGHT
+        else:
+            card_width  = SMALL_CARD_WIDTH
+            card_height = SMALL_CARD_HEIGHT
+        self.canvas = tk.Canvas(self, width=card_width, height=card_height)
+        self.canvas.pack(side=tk.TOP, padx=PADX, pady=(0, PADY))
+        self.canvas.bind('<Button-1>', self.onClick)
+
+        self.setHeat(0)
+        self.last_drew_card = smartCard and smartCard.card
+        self.refresh(smartCard)
+
+    def refresh(self, smartCard: SmartCard | None):
+        for label in self.checkLabels:
+            label.destroy()
+        if smartCard is not None:
+            for uuid in smartCard.selected_by:
+                player = self.root.gamestate.seekPlayer(uuid)
+                hx = rgbToHex(*[int(x) for x in player.color.split(',')])
+                label = ttk.Label(
+                    self.checksBar, text='X', background=hx, 
+                    foreground='white', 
+                )
+                label.pack(side=tk.LEFT, padx=3)
+                self.checkLabels.append(label)
+
+        card = smartCard and smartCard.card
+        if self.last_drew_card != card:
+            self.canvas.delete('all')
+            if card is not None:
+                self.canvas.create_image(
+                    0, 0, anchor=tk.NW, 
+                    image=self.root.texture.get(*card), 
+                )
+    
+    def update(self):
+        if self.smartCard is not None:
+            heat = 1.0 - (time.time() - self.smartCard.birth) / HEAT_LASTS_FOR
+            self.setHeat(heat)
+        super().update()
+
+    def setHeat(self, heat: float):
+        heat = min(1.0, max(0.0, heat))
+        luminosity = round((1 - heat) * 255)
+        style = ttk.Style()
+        style.configure(self.unique_style_name, background=rgbToHex(
+            luminosity, luminosity, luminosity, 
+        ))
+    
+    def onClick(self, _):
+        if self.is_public_not_display_case:
+            type_ = CET.TOGGLE_SELECT_CARD_PUBLIC
+        else:
+            type_ = CET.TOGGLE_SELECT_CARD_DISPLAY
+        ...
 
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
