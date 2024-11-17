@@ -1,15 +1,14 @@
 import typing as tp
 import os
-import socket
-from contextlib import contextmanager
-import gzip
-import json
-from threading import Thread, Lock
+import asyncio
+from asyncio import StreamReader, StreamWriter
+import threading
 
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 
+from shared import *
 from shared import ClientEventType as ET, ClientEventFields as EF
 from gamestate import *
 
@@ -21,108 +20,56 @@ UpdateUUIDEvent = tp.Callable[[str], None]
 ArglessEvent = tp.Callable[[], None]
 SubmitEventFunc = tp.Callable[[tp.Dict], None]
 
-def EventsIn(sock: socket.socket):
-    buf = b''
-    while True:
-        data = sock.recv(1024)
-        if not data:
-            break
-        buf += data
-        while b'\x00' in buf:
-            packet, buf = buf.split(b'\x00', 1)
-            do_stop = yield json.loads(gzip.decompress(packet).decode())
-            if do_stop is not None:
-                return
-
-@contextmanager
-def NetworkClient(
-    host: str, port: int,
-    onUpdateGamestate: UpdateGamestateEvent, 
-    onUpdateUUID: UpdateUUIDEvent, 
-    onDisconnect: ArglessEvent,
-):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        print(f'Connecting to {host}:{port}... ', end='', flush=True)
-        sock.connect((host, port))
-        print('ok')
-
-        def write(event: tp.Dict):
-            data = gzip.compress(json.dumps(event).encode())
-            sock.sendall(data + b'\x00')
-        
-        def recvLoop():
-            eventsIn = EventsIn(sock)
-            try:
-                while True:
-                    try:
-                        event = eventsIn.send(None)
-                    except (
-                        ConnectionResetError, 
-                        ConnectionAbortedError, 
-                        StopIteration, 
-                    ):
-                        print('Connection closed by server')
-                        break
-                    if isinstance(event, str):
-                        onUpdateUUID(event)
-                    else:
-                        onUpdateGamestate(Gamestate.fromPrimitive(event))
-            finally:
-                try:
-                    eventsIn.send(True)
-                except StopIteration:
-                    pass
-                else:
-                    assert False
-                onDisconnect()
-        
-        thread = Thread(target=recvLoop)
-        yield write, thread, sock
-
 class Root(tk.Tk):
-    def __init__(self):
+    def __init__(self, reader: StreamReader, writer: StreamWriter):
         super().__init__()
+        self.reader = reader
+        self.writer = writer
         self.gamestate = Gamestate.default()
         self.uuid: str | None = None
+        self.lock = threading.Lock()
+        self.setupBarrier = threading.Lock()
+        self.setupBarrier.acquire()
     
-    @contextmanager
-    def context(self, host: str, port: int):
-        with NetworkClient(
-            host, port,
-            self.onUpdateGamestate, 
-            self.onUpdateUUID, 
-            self.onDisconnect,
-        ) as (self.__write, receiveLoop, sock):
-            receiveLoop.start()
+    async def recvLoop(self):
+        while True:
             try:
-                yield self
-            finally:
-                sock.close()
-                receiveLoop.join()
+                event = await recvPrimitive(self.reader)
+            except asyncio.IncompleteReadError:
+                self.onUnexpectedDisconnect()
+                break
+            except asyncio.CancelledError:
+                break
+            if isinstance(event, str):
+                self.onUpdateUUID(event)
+            else:
+                self.onUpdateGamestate(Gamestate.fromPrimitive(event))
     
-    def submit(self, event: tp.Dict):
+    def send(self, event: tp.Dict):
         event[EF.HASH] = hash(self.gamestate)
-        self.__write(event)
+        sendPrimitive(event, self.writer)
     
     def setup(self):
+        self.setupBarrier.acquire()
         self.title("Web Set")
         self.bottomPanel = BottomPanel(self, self)
         self.refresh()
     
-    def updateGamestateNow(self, gamestate: Gamestate):
-        self.gamestate = gamestate
-        ... # update GUI
-    
     def onUpdateGamestate(self, gamestate: Gamestate):
-        self.after_idle(self.updateGamestateNow, gamestate)
+        with self.lock:
+            self.gamestate = gamestate
+            ... # update GUI
     
     def onUpdateUUID(self, uuid: str):
         self.uuid = uuid
-        self.setup()
+        print('Initialization ok')
+        self.setupBarrier.release()
     
-    def onDisconnect(self):
+    def onUnexpectedDisconnect(self):
+        msg = 'Error: Unexpected disconnection by server.'
+        print(msg)
         def f():
-            messagebox.showerror('Error: Server disconnected', 'Server disconneted!')
+            messagebox.showerror(msg, msg)
             self.quit()
         self.after_idle(f)
     
@@ -178,19 +125,20 @@ class BottomPanel(ttk.Frame):
         col += 1
 
     def clearMyVote(self):
-        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.IDLE })
+        self.root.send({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.IDLE })
 
     def callSet(self):
-        if self.root.getMyself().shouted_set is None:
-            self.root.submit({ EF.TYPE: ET.CALL_SET })
-        else:
-            self.root.submit({ EF.TYPE: ET.CANCEL_CALL_SET })
+        with self.root.lock:
+            if self.root.getMyself().shouted_set is None:
+                self.root.send({ EF.TYPE: ET.CALL_SET })
+            else:
+                self.root.send({ EF.TYPE: ET.CANCEL_CALL_SET })
     
     def voteAccept(self):
-        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.ACCEPT })
+        self.root.send({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.ACCEPT })
     
     def voteUndo(self):
-        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.UNDO })
+        self.root.send({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.UNDO })
     
     def refresh(self):
         if self.root.getMyself().shouted_set is None:
@@ -198,7 +146,7 @@ class BottomPanel(ttk.Frame):
         else:
             self.buttonCallSet.config(text='Just kidding...')
 
-def main():
+async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     url = input('Server (ip_addr:port) > ')
     try:
@@ -207,9 +155,37 @@ def main():
         host = 'localhost'
         port_str = url
     port = int(port_str)
-    root = Root()
-    with root.context(host, port):
-        root.mainloop()
+    print(f'Connecting to {host}:{port}... ', end='', flush=True)
+    reader, writer = await asyncio.open_connection(host, port)
+    print('ok')
+
+    try:
+        root: Root | None = None
+        lock = asyncio.Lock()
+        await lock.acquire()
+        def runGUI():
+            nonlocal root
+            root = Root(reader, writer)
+            lock.release()
+            print('Waiting for initialization...')
+            root.mainloop()
+
+        taskTk = asyncio.create_task(asyncio.to_thread(runGUI))
+        await lock.acquire()
+        assert root is not None
+        taskRecvLoop = asyncio.create_task(root.recvLoop())
+        try:
+            await taskTk
+        except asyncio.CancelledError:
+            pass
+        finally:
+            taskRecvLoop.cancel()
+            await taskRecvLoop
+    finally:
+        print('closing... ', end='', flush=True)
+        writer.close()
+        await writer.wait_closed()
+        print('ok')
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

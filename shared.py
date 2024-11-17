@@ -2,6 +2,11 @@ import typing as tp
 import random
 import os
 from enum import Enum
+import gzip
+import json
+import asyncio
+
+PACKET_LEN_PREFIX_LEN = 8
 
 Card = tp.Tuple[int, int, int, int]
 
@@ -62,6 +67,25 @@ class ClientEventType(Enum):
     VOTE = 'VOTE'
     CALL_SET = 'CALL_SET'
     CANCEL_CALL_SET = 'CANCEL_CALL_SET'
+
+def sendPayload(payload: bytes, writer: asyncio.StreamWriter):
+    prefix = format(len(payload), f'0{PACKET_LEN_PREFIX_LEN}d').encode()
+    assert len(prefix) <= PACKET_LEN_PREFIX_LEN
+    writer.write(prefix)
+    writer.write(payload)
+
+def primitiveToPayload(x, /):
+    payload = gzip.compress(json.dumps(x).encode())
+    return payload
+
+def sendPrimitive(x, /, writer: asyncio.StreamWriter):
+    sendPayload(primitiveToPayload(x), writer)
+
+async def recvPrimitive(reader: asyncio.StreamReader):
+    prefix = await reader.readexactly(PACKET_LEN_PREFIX_LEN)
+    payload_len = int(prefix)
+    payload = await reader.readexactly(payload_len)
+    return json.loads(gzip.decompress(payload))
 
 if __name__ == '__main__':
     testBitsConversion()

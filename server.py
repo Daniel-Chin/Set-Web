@@ -1,13 +1,12 @@
 import typing as tp
 import asyncio
 from asyncio import StreamReader, StreamWriter
-import gzip
-import json
 import random
 import time
 
 from uuid import uuid4
 
+from shared import *
 from shared import ClientEventType as ET, ClientEventFields as EF
 from gamestate import *
 
@@ -15,7 +14,7 @@ class Server:
     def __init__(self):
         self.port = int(input('Port > '))
         self.gamestate = Gamestate.default()
-        self.clients: tp.Dict[str, StreamWriter] = {}
+        self.writers: tp.Dict[str, StreamWriter] = {}
         self.time_of_last_harvest = time.time()
 
     async def handleClient(self, reader: StreamReader, writer: StreamWriter):
@@ -23,30 +22,27 @@ class Server:
         uuid = str(uuid4())
         print(f'New connection from {addr}')
         print(f'Assigning UUID {uuid}')
-        self.clients[uuid] = writer
+        self.writers[uuid] = writer
         await self.onPlayerJoin(uuid)
         
         try:
             while True:
-                data = await reader.readuntil('\x00')
-                if not data:
-                    print(f'Connection closed by {addr}')
+                try:
+                    event = await recvPrimitive(reader)
+                except asyncio.IncompleteReadError:
+                    print(f'Client {addr} disconnected')
+                    await self.onPlayerLeave(uuid)
+                    self.writers.pop(uuid)
+                    await self.broadcastGamestate()
                     break
-                
-                event = json.loads(gzip.decompress(data[:-1]).decode())
                 self.handleEvent(uuid, event)
-                await self.broadcastGamestate()
-        
         except asyncio.CancelledError:
             print(f'Client handler task cancelled for {addr}')
         except Exception as e:
             print(f'Error with client {addr}: {e}')
         finally:
-            await self.onPlayerLeave(uuid)
             print(f'Closing connection to {addr}... ', end='', flush=True)
-            self.clients.pop(uuid)
             writer.close()
-            await self.broadcastGamestate()
             try:
                 await writer.wait_closed()
             except ConnectionResetError:
@@ -66,19 +62,18 @@ class Server:
     
     def gamestatePacket(self):
         self.gamestate.validate()
-        payload = gzip.compress(json.dumps(
+        return primitiveToPayload(
             self.gamestate.toPrimitive(), 
-        ).encode()) + b'\x00'
-        return payload
+        )
 
     def sendGamestate(
         self, writer: StreamWriter, cached_payload: bytes | None = None, 
     ):
-        writer.write(cached_payload or self.gamestatePacket())
+        sendPayload(cached_payload or self.gamestatePacket(), writer)
     
     async def broadcastGamestate(self):
         payload = self.gamestatePacket()
-        for uuid, writer in self.clients.items():
+        for uuid, writer in self.writers.items():
             try:
                 self.sendGamestate(writer, payload)
                 # await writer.drain()
@@ -91,8 +86,8 @@ class Server:
             str(uuid), f'Player {len(self.gamestate.players)}', 
             f'{random.randint(0, 255)},{random.randint(0, 255)},{random.randint(0, 255)}', 
         ))
-        writer = self.clients[uuid]
-        writer.write(json.dumps(uuid).encode() + b'\x00')
+        writer = self.writers[uuid]
+        sendPrimitive(uuid, writer)
         self.sendGamestate(writer)
         # await writer.drain()
     
