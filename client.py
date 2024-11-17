@@ -19,8 +19,8 @@ from gamestate import *
 
 FPS = 30
 
-PADX = 5
-PADY = 5
+PADX = 16
+PADY = 16
 
 @asynccontextmanager
 async def Network():
@@ -139,43 +139,34 @@ class BottomPanel(ttk.Frame):
         self.root = root
         self.pack(side=tk.BOTTOM, fill=tk.X)
 
-        col = 0
-
         self.buttonClearMyVote = ttk.Button(
             self, text='Clear My Vote', command=self.clearMyVote, 
         )
-        self.buttonClearMyVote.grid(
-            row=0, column=col, sticky=tk.EW, padx=PADX, pady=PADY, 
+        self.buttonClearMyVote.pack(
+            side=tk.LEFT, padx=PADX, pady=PADY, 
         )
-        self.columnconfigure(col, weight=0)
-        col += 1
 
         self.buttonCallSet = ttk.Button(
             self, text='Set!!!', command=self.callSet, 
         )
-        self.buttonCallSet.grid(
-            row=0, column=col, sticky=tk.EW, padx=PADX, pady=PADY, 
+        self.buttonCallSet.pack(
+            side=tk.LEFT, padx=PADX, pady=PADY, 
+            expand=True, fill=tk.X,
         )
-        self.columnconfigure(col, weight=1)
-        col += 1
 
         self.buttonVoteAccept = ttk.Button(
             self, text='Vote Accept', command=self.voteAccept, 
         )
-        self.buttonVoteAccept.grid(
-            row=0, column=col, sticky=tk.EW, padx=PADX, pady=PADY, 
+        self.buttonVoteAccept.pack(
+            side=tk.LEFT, padx=PADX, pady=PADY, 
         )
-        self.columnconfigure(col, weight=0)
-        col += 1
 
         self.buttonVoteUndo = ttk.Button(
             self, text='Vote Undo', command=self.voteUndo, 
         )
-        self.buttonVoteUndo.grid(
-            row=0, column=col, sticky=tk.EW, padx=PADX, pady=PADY, 
+        self.buttonVoteUndo.pack(
+            side=tk.LEFT, padx=PADX, pady=PADY, 
         )
-        self.columnconfigure(col, weight=0)
-        col += 1
 
     def clearMyVote(self):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
@@ -203,10 +194,14 @@ async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     async with Network() as (reader, writer):
         print('Waiting for player ID assignment...')
-        uuid = await recvPrimitive(reader)
+        event = await recvPrimitive(reader)
+        assert SET(event[SEF.TYPE]) == SET.YOU_ARE
+        uuid = event[SEF.CONTENT]
         print('ok')
         print('Waiting for gamestate...')
-        gamestate = Gamestate.fromPrimitive(await recvPrimitive(reader))
+        event = await recvPrimitive(reader)
+        assert SET(event[SEF.TYPE]) == SET.GAMESTATE
+        gamestate = Gamestate.fromPrimitive(event[SEF.CONTENT])
         print('ok')
         queue = asyncio.Queue()
         receiveTask = asyncio.create_task(receiver(reader, queue))

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as tp
 from dataclasses import dataclass, asdict, field
+from pprint import pprint
 
 from shared import *
 
@@ -17,13 +18,17 @@ class Player:
     display_case: tp.List[SmartCard] = field(default_factory=list)
     display_case_hidden: bool = False
 
-    def mutableHash(self):
-        return hash((
+    def mutableHash(self, verbose: bool = False):
+        t = (
             self.uuid, self.name, self.color, self.voting.value, 
             self.shouted_set, self.wealth_thickness, self.n_of_wins, 
             tuple([card.mutableHash() for card in self.display_case]), 
             self.display_case_hidden, 
-        ))
+        )
+        if verbose:
+            for i, e in enumerate(t):
+                print('player', i, deterministicHash(e))
+        return deterministicHash(t)
 
     def toPrimitive(self):
         d = asdict(self)
@@ -51,10 +56,13 @@ class SmartCard:
     birth: float
     selected_by: tp.List[str] = field(default_factory=list)
 
-    def mutableHash(self):
-        return hash((
+    def mutableHash(self, verbose: bool = False):
+        h = deterministicHash((
             self.card, self.birth, tuple(self.selected_by),
         ))
+        if verbose:
+            print('SmartCard:', h)
+        return h
 
     def toPrimitive(self):
         d = asdict(self)
@@ -86,12 +94,16 @@ class Gamestate:
     players: tp.List[Player]
     public_zone: tp.List[tp.List[SmartCard | None]]
 
-    def mutableHash(self):
-        return hash((
+    def mutableHash(self, verbose: bool = False):
+        t = (
             tuple([self.cards_in_deck[i] for i in iterAllCards()]), 
-            tuple([player.mutableHash() for player in self.players]), 
-            tuple([tuple([sC and sC.mutableHash() for sC in row]) for row in self.public_zone]),
-        ))
+            tuple([player.mutableHash(verbose) for player in self.players]), 
+            tuple([tuple([sC and sC.mutableHash(verbose) for sC in row]) for row in self.public_zone]),
+        )
+        if verbose:
+            for i, e in enumerate(t):
+                print(i, deterministicHash(e))
+        return deterministicHash(t)
 
     @staticmethod
     def fullDeck():
@@ -171,3 +183,8 @@ class Gamestate:
         for player in self.players:
             for card in player.display_case:
                 yield card
+    
+    def printDebug(self):
+        print('Gamestate:')
+        print('hash', self.mutableHash(verbose=True))
+        pprint(self)

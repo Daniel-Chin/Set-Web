@@ -5,6 +5,7 @@ from enum import Enum
 import gzip
 import json
 import asyncio
+from hashlib import sha256
 
 PACKET_LEN_PREFIX_LEN = 8
 
@@ -108,6 +109,9 @@ async def recvPrimitive(reader: asyncio.StreamReader):
     payload_len = int(prefix)
     payload = await reader.readexactly(payload_len)
     return json.loads(gzip.decompress(payload))
+
+def deterministicHash(x: tp.Any, /):
+    return sha256(json.dumps(x).encode()).hexdigest()
 
 if __name__ == '__main__':
     testBitsConversion()

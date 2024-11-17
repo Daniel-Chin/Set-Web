@@ -76,7 +76,7 @@ class Server:
             writer.close()
             try:
                 await writer.wait_closed()
-            except ConnectionResetError:
+            except (ConnectionResetError, BrokenPipeError):
                 pass
             print('ok')
 
@@ -103,6 +103,16 @@ class Server:
     ):
         await sendPayload(cached_payload or self.gamestatePacket(), writer)
     
+    async def broadcastGamestate(self):
+        payload = self.gamestatePacket()
+        await self.broadcast(payload)
+        # re-encode gamestate for server-client hash consistency
+        # self.gamestate = Gamestate.fromPrimitive(
+        #     json.loads(json.dumps(
+        #         self.gamestate.toPrimitive(), 
+        #     )),
+        # )
+    
     async def broadcast(self, payload: bytes):
         for uuid, writer in self.writers.items():
             try:
@@ -121,12 +131,12 @@ class Server:
             SEF.TYPE: SET.YOU_ARE,
             SEF.CONTENT: uuid,
         }, writer)
-        await self.sendGamestate(writer)
-        self.gamestate.validate()
+        await self.broadcastGamestate()
     
     async def onPlayerLeave(self, uuid: str):
         self.gamestate.players = [p for p in self.gamestate.players if p.uuid != uuid]
         self.gamestate.validate()
+        await self.broadcastGamestate()
     
     def checkHash(self, event: dict):
         if event[CEF.HASH] != self.gamestate.mutableHash():
