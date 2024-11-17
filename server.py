@@ -276,6 +276,7 @@ class Server:
         if consensus == Vote.IDLE:
             return
         elif consensus == Vote.NEW_GAME:
+            self.undoTape.recordNewState(self.gamestate)
             self.gamestate.cards_in_deck = Gamestate.fullDeck()
             for row in self.gamestate.public_zone:
                 for i in range(len(row)):
@@ -286,11 +287,11 @@ class Server:
                 winner.wealth_thickness = 0
                 winner.display_case.clear()
             self.time_of_last_harvest = time.time()
-            self.undoTape.recordNewState(self.gamestate)
         elif consensus == Vote.UNDO:
             self.time_of_last_harvest = time.time()
             self.gamestate = self.undoTape.undo(self.gamestate)
         elif consensus == Vote.ACCEPT:
+            self.undoTape.recordNewState(self.gamestate)
             winner = self.gamestate.uniqueShoutSetPlayer()
             assert winner is not None
             the_set: tp.List[SmartCard] = []
@@ -313,7 +314,6 @@ class Server:
                 card.birth = time.time()
                 winner.display_case.append(card)
             self.time_of_last_harvest = time.time()
-            self.undoTape.recordNewState(self.gamestate)
         elif consensus == Vote.COUNT_CARDS:
             buf = io.StringIO()
             for player in self.gamestate.players:
