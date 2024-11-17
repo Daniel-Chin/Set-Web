@@ -52,18 +52,18 @@ def iterAllCards():
                 for s in range(3):
                     yield (c, f, n, s)
 
-class Vote(Enum):
+class Vote(str, Enum):
     IDLE = 'IDLE'
     NEW_GAME = 'NEW_GAME'
     ACCEPT = 'ACCEPT'
     UNDO = 'UNDO'
 
-class ClientEventFields(Enum):
+class ClientEventFields(str, Enum):
     TYPE = 'type'
     HASH = 'gamestate_hash'
     VOTE = 'vote'
 
-class ClientEventType(Enum):
+class ClientEventType(str, Enum):
     VOTE = 'VOTE'
     CALL_SET = 'CALL_SET'
     CANCEL_CALL_SET = 'CANCEL_CALL_SET'

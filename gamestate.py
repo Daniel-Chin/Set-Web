@@ -17,6 +17,14 @@ class Player:
     display_case: tp.List[SmartCard] = field(default_factory=list)
     display_case_hidden: bool = False
 
+    def mutableHash(self):
+        return hash((
+            self.uuid, self.name, self.color, self.voting.value, 
+            self.shouted_set, self.wealth_thickness, self.n_of_wins, 
+            tuple([card.mutableHash() for card in self.display_case]), 
+            self.display_case_hidden, 
+        ))
+
     def toPrimitive(self):
         d = asdict(self)
         d['display_case'] = [card.toPrimitive() for card in self.display_case]
@@ -43,6 +51,11 @@ class SmartCard:
     birth: float
     selected_by: tp.List[str] = field(default_factory=list)
 
+    def mutableHash(self):
+        return hash((
+            self.card, self.birth, tuple(self.selected_by),
+        ))
+
     def toPrimitive(self):
         d = asdict(self)
         s = ''
@@ -65,20 +78,21 @@ class SmartCard:
 class Gamestate:
     cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool]
     players: tp.List[Player]
-    public_zone: tp.List[tp.List[SmartCard]]
-    public_zone_n_rows: int
-    public_zone_n_cols: int
+    public_zone: tp.List[tp.List[SmartCard | None]]
+
+    def mutableHash(self):
+        return hash((
+            tuple([self.cards_in_deck[i] for i in iterAllCards()]), 
+            tuple([player.mutableHash() for player in self.players]), 
+            tuple([tuple([sC and sC.mutableHash() for sC in row]) for row in self.public_zone]),
+        ))
 
     @classmethod
     def default(cls):
-        n_rows = 3
-        n_cols = 4
         return cls(
             cards_in_deck=dict.fromkeys(iterAllCards(), True), 
             players=[], 
-            public_zone=[[] for _ in range(n_rows)], 
-            public_zone_n_rows=n_rows, 
-            public_zone_n_cols=n_cols, 
+            public_zone=[[None] * 4 for _ in range(3)], 
         )
 
     def validate(self):
@@ -99,7 +113,7 @@ class Gamestate:
         d['cards_in_deck'] = cards_in_deck
         d['players'] = [player.toPrimitive() for player in self.players]
         d['public_zone'] = [[
-            card.toPrimitive() for card in row
+            card and card.toPrimitive() for card in row
         ] for row in self.public_zone]
         return d
     
@@ -112,10 +126,8 @@ class Gamestate:
             cards_in_deck=cards_in_deck, 
             players=[Player.fromPrimitive(player) for player in d['players']], 
             public_zone=[[
-                SmartCard.fromPrimitive(card) for card in row
+                card and SmartCard.fromPrimitive(card) for card in row
             ] for row in d['public_zone']],
-            public_zone_n_cols=d['public_zone_n_cols'], 
-            public_zone_n_rows=d['public_zone_n_rows'], 
         )
     
     def seekPlayer(self, uuid: str):

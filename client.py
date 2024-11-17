@@ -28,13 +28,13 @@ async def Network():
         host = 'localhost'
         port_str = url
     port = int(port_str)
-    print(f'Connecting to {host}:{port}... ', end='', flush=True)
+    print(f'Connecting to {host}:{port}...')
     reader, writer = await asyncio.open_connection(host, port)
     print('ok')
     try:
         yield reader, writer
     finally:
-        print('closing... ', end='', flush=True)
+        print('closing...')
         writer.close()
         await writer.wait_closed()
         print('ok')
@@ -87,7 +87,7 @@ class Root(tk.Tk):
             self.onUpdateGamestate(Gamestate.fromPrimitive(event))
     
     def send(self, event: tp.Dict):
-        event[EF.HASH] = hash(self.gamestate)
+        event[EF.HASH] = self.gamestate.mutableHash()
         sendPrimitive(event, self.writer)
     
     def setup(self):
@@ -184,10 +184,10 @@ class BottomPanel(ttk.Frame):
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     async with Network() as (reader, writer):
-        print('Waiting for player ID assignment... ', end='', flush=True)
+        print('Waiting for player ID assignment...')
         uuid = await recvPrimitive(reader)
         print('ok')
-        print('Waiting for gamestate... ', end='', flush=True)
+        print('Waiting for gamestate...')
         gamestate = Gamestate.fromPrimitive(await recvPrimitive(reader))
         print('ok')
         queue = asyncio.Queue()

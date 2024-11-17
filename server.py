@@ -41,7 +41,7 @@ class Server:
         except Exception as e:
             print(f'Error with client {addr}: {e}')
         finally:
-            print(f'Closing connection to {addr}... ', end='', flush=True)
+            print(f'Closing connection to {addr}...')
             writer.close()
             try:
                 await writer.wait_closed()
@@ -57,7 +57,7 @@ class Server:
             try:
                 await server.serve_forever()
             except asyncio.CancelledError:
-                print('server closing... ', end='', flush=True)
+                print('server closing...')
         print('ok')
     
     def gamestatePacket(self):
@@ -96,7 +96,7 @@ class Server:
     
     async def handleEvent(self, uuid: str, event: dict):
         type_ = event[EF.TYPE]
-        if event[EF.HASH] != hash(self.gamestate):
+        if event[EF.HASH] != self.gamestate.mutableHash():
             print('Gamestate hash mismatch. Dropping client event:', type_)
             return
         if   type_ == ET.VOTE:
