@@ -200,7 +200,7 @@ class Root(tk.Tk):
             underline = -1
         button = ttk.Button(parent, text=text, command=command, underline=underline)
         if key is not None:
-            self.bind(f'<{key}>', lambda _: button.invoke())
+            self.bind(f'<{key}>', lambda _: button.invoke(), add=True)
         return button
 
 class BottomPanel(ttk.Frame):
@@ -211,7 +211,7 @@ class BottomPanel(ttk.Frame):
         self.config(borderwidth=1, relief=tk.SOLID)
 
         self.buttonClearMyVote = root.newButton(
-            self, text='Clear My Vote (ESC)', command=self.clearMyVote, 
+            self, text='Clear My Vote (Esc)', command=self.clearMyVote, 
             special_shortcut='Escape', 
         )
         self.buttonClearMyVote.pack(
@@ -260,9 +260,9 @@ class BottomPanel(ttk.Frame):
     
     def refresh(self):
         if self.root.getMyself().shouted_set is None:
-            self.buttonCallSet.config(text='Set!!!')
+            self.buttonCallSet.config(text='Set!!!', underline=0)
         else:
-            self.buttonCallSet.config(text='Just kidding...')
+            self.buttonCallSet.config(text='Just kidding...', underline=2)
         disableIf(self.buttonClearMyVote, (
             self.root.getMyself().voting == Vote.IDLE
         ))
@@ -674,7 +674,7 @@ class PublicZoneTopPanel(ttk.Frame):
         self.config(borderwidth=1, relief=tk.SOLID)
 
         self.buttonClearSelection = root.newButton(
-            self, text='Clear Selection (ESC)', command=self.clearSelection, 
+            self, text='Clear Selection (Esc)', command=self.clearSelection, 
             special_shortcut='Escape',
         )
         self.buttonClearSelection.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
