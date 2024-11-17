@@ -63,8 +63,6 @@ class Server:
                 except asyncio.IncompleteReadError:
                     print(f'Client {addr} disconnected')
                     await self.onPlayerLeave(uuid)
-                    self.writers.pop(uuid)
-                    await self.broadcast(self.gamestatePacket())
                     break
                 await self.handleEvent(uuid, event)
         except asyncio.CancelledError:
@@ -134,6 +132,7 @@ class Server:
         await self.broadcastGamestate()
     
     async def onPlayerLeave(self, uuid: str):
+        self.writers.pop(uuid)
         self.gamestate.players = [p for p in self.gamestate.players if p.uuid != uuid]
         self.gamestate.validate()
         await self.broadcastGamestate()

@@ -88,7 +88,7 @@ class Root(tk.Tk):
                 break
             type_ = SET(event[SEF.TYPE])
             if type_ == SET.GAMESTATE:
-                self.onUpdateGamestate(Gamestate.fromPrimitive(event))
+                self.onUpdateGamestate(Gamestate.fromPrimitive(event[SEF.CONTENT]))
             elif type_ == SET.YOU_ARE:
                 assert False
             elif type_ == SET.POPUP_MESSAGE:

@@ -150,16 +150,20 @@ class Gamestate:
     
     @classmethod
     def fromPrimitive(cls, d: dict):
-        cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool] = {}
-        for idx, char in zip(iterAllCards(), d['cards_in_deck']):
-            cards_in_deck[idx] = char == 't'
-        return cls(
-            cards_in_deck=cards_in_deck, 
-            players=[Player.fromPrimitive(player) for player in d['players']], 
-            public_zone=[[
-                card and SmartCard.fromPrimitive(card) for card in row
-            ] for row in d['public_zone']],
-        )
+        try:
+            cards_in_deck: tp.Dict[tp.Tuple[int, int, int, int], bool] = {}
+            for idx, char in zip(iterAllCards(), d['cards_in_deck']):
+                cards_in_deck[idx] = char == 't'
+            return cls(
+                cards_in_deck=cards_in_deck, 
+                players=[Player.fromPrimitive(player) for player in d['players']], 
+                public_zone=[[
+                    card and SmartCard.fromPrimitive(card) for card in row
+                ] for row in d['public_zone']],
+            )
+        except KeyError:
+            print(f'{d = }')
+            raise
     
     def seekPlayer(self, uuid: str):
         for player in self.players:
