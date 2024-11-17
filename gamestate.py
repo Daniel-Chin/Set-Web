@@ -73,6 +73,12 @@ class SmartCard:
             birth=d['birth'], 
             selected_by=d['selected_by'], 
         )
+    
+    def toggle(self, uuid: str):
+        if uuid in self.selected_by:
+            self.selected_by.remove(uuid)
+        else:
+            self.selected_by.append(uuid)
 
 @dataclass()
 class Gamestate:
@@ -104,6 +110,17 @@ class Gamestate:
             for player in self.players:
                 if player.voting == Vote.ACCEPT:
                     player.voting = Vote.IDLE
+        for row in self.public_zone:
+            for card in row:
+                if card is None:
+                    continue
+                card.selected_by = self.filterByUsers(card.selected_by)
+        for player in self.players:
+            for card in player.display_case:
+                card.selected_by = self.filterByUsers(card.selected_by)
+    
+    def filterByUsers(self, uuids: tp.List[str]):
+        return [uuid for uuid in uuids if uuid in [player.uuid for player in self.players]]
     
     def toPrimitive(self):
         d = asdict(self)

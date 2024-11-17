@@ -62,11 +62,20 @@ class ClientEventFields(str, Enum):
     TYPE = 'type'
     HASH = 'gamestate_hash'
     VOTE = 'vote'
+    TARGET_VALUE = 'target_value'
+    TARGET_PLAYER = 'target_player'
 
 class ClientEventType(str, Enum):
     VOTE = 'VOTE'
     CALL_SET = 'CALL_SET'
     CANCEL_CALL_SET = 'CANCEL_CALL_SET'
+    CHANGE_NAME = 'CHANGE_NAME'
+    CHANGE_COLOR = 'CHANGE_COLOR'
+    TOGGLE_DISPLAY_CASE_VISIBLE = 'TOGGLE_DISPLAY_CASE_VISIBLE'
+    ACC_N_WINS = 'ACC_N_WINS'
+    ACC_PUBLIC_ZONE_SHAPE = 'ACC_PUBLIC_ZONE_SHAPE'
+    TOGGLE_SELECT_CARD_PUBLIC = 'TOGGLE_SELECT_CARD_PUBLIC'
+    TOGGLE_SELECT_CARD_DISPLAY = 'TOGGLE_SELECT_CARD_DISPLAY'
 
 def sendPayload(payload: bytes, writer: asyncio.StreamWriter):
     prefix = format(len(payload), f'0{PACKET_LEN_PREFIX_LEN}d').encode()

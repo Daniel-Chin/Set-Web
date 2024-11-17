@@ -59,7 +59,7 @@ def test():
         label.pack(side=tk.LEFT)
         img = texture.get(c, f, n, s)
         # img = ImageTk.PhotoImage(texture.family_photo.crop(bboxOf(0,0)))
-        label = tk.Label(root, image=img)
+        label = tk.Label(root, image=img)   # type: ignore
         label.pack(side=tk.LEFT)
 
     root.mainloop()

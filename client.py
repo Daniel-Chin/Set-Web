@@ -85,7 +85,7 @@ class Root(tk.Tk):
                 break
             self.onUpdateGamestate(Gamestate.fromPrimitive(event))
     
-    def send(self, event: tp.Dict):
+    def submit(self, event: tp.Dict):
         event[EF.HASH] = self.gamestate.mutableHash()
         sendPrimitive(event, self.writer)
     
@@ -115,7 +115,7 @@ class Root(tk.Tk):
         ...
 
 class BottomPanel(ttk.Frame):
-    def __init__(self, root: Root, parent: tk.Widget):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
         super().__init__(parent)
         self.root = root
         self.pack(side=tk.BOTTOM, fill=tk.X)
@@ -159,20 +159,20 @@ class BottomPanel(ttk.Frame):
         col += 1
 
     def clearMyVote(self):
-        self.root.send({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.IDLE })
+        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.IDLE })
 
     def callSet(self):
         with self.root.lock:
             if self.root.getMyself().shouted_set is None:
-                self.root.send({ EF.TYPE: ET.CALL_SET })
+                self.root.submit({ EF.TYPE: ET.CALL_SET })
             else:
-                self.root.send({ EF.TYPE: ET.CANCEL_CALL_SET })
+                self.root.submit({ EF.TYPE: ET.CANCEL_CALL_SET })
     
     def voteAccept(self):
-        self.root.send({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.ACCEPT })
+        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.ACCEPT })
     
     def voteUndo(self):
-        self.root.send({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.UNDO })
+        self.root.submit({ EF.TYPE: ET.VOTE, EF.VOTE: Vote.UNDO })
     
     def refresh(self):
         if self.root.getMyself().shouted_set is None:
