@@ -3,6 +3,8 @@ import os
 import asyncio
 from asyncio import StreamReader, StreamWriter
 import threading
+from contextlib import asynccontextmanager
+import time
 
 import tkinter as tk
 from tkinter import ttk
@@ -12,45 +14,83 @@ from shared import *
 from shared import ClientEventType as ET, ClientEventFields as EF
 from gamestate import *
 
+FPS = 30
+
 PADX = 5
 PADY = 5
 
-UpdateGamestateEvent = tp.Callable[[Gamestate], None]
-UpdateUUIDEvent = tp.Callable[[str], None]
-ArglessEvent = tp.Callable[[], None]
-SubmitEventFunc = tp.Callable[[tp.Dict], None]
+@asynccontextmanager
+async def Network():
+    url = input('Server (ip_addr:port) > ')
+    try:
+        host, port_str = url.split(':')
+    except ValueError:
+        host = 'localhost'
+        port_str = url
+    port = int(port_str)
+    print(f'Connecting to {host}:{port}... ', end='', flush=True)
+    reader, writer = await asyncio.open_connection(host, port)
+    print('ok')
+    try:
+        yield reader, writer
+    finally:
+        print('closing... ', end='', flush=True)
+        writer.close()
+        await writer.wait_closed()
+        print('ok')
 
-class Root(tk.Tk):
-    def __init__(self, reader: StreamReader, writer: StreamWriter):
-        super().__init__()
-        self.reader = reader
-        self.writer = writer
-        self.gamestate = Gamestate.default()
-        self.uuid: str | None = None
-        self.lock = threading.Lock()
-        self.setupBarrier = threading.Lock()
-        self.setupBarrier.acquire()
-    
-    async def recvLoop(self):
+async def receiver(reader: StreamReader, queue: asyncio.Queue):
+    try:
         while True:
             try:
-                event = await recvPrimitive(self.reader)
+                event = await recvPrimitive(reader)
             except asyncio.IncompleteReadError:
+                break
+            await queue.put(event)
+        await queue.put(None)
+    except asyncio.CancelledError:
+        pass
+
+class Root(tk.Tk):
+    def __init__(
+        self, queue: asyncio.Queue, writer: StreamWriter, 
+        uuid: str, gamestate: Gamestate,
+    ):
+        super().__init__()
+        self.queue = queue
+        self.writer = writer
+        self.uuid = uuid
+        self.gamestate = gamestate
+        self.lock = threading.Lock()
+
+        self.setup()
+    
+    async def asyncMainloop(self):
+        do_continue = True
+        def onClose():
+            nonlocal do_continue
+            do_continue = False
+        self.protocol("WM_DELETE_WINDOW", onClose)
+        while do_continue:
+            self.processQueue()
+            self.update()
+            next_update_time = time.time() + 1 / FPS
+            self.processQueue()
+            await asyncio.sleep(max(0, next_update_time - time.time()))
+    
+    def processQueue(self):
+        while not self.queue.empty():
+            event = self.queue.get_nowait()
+            if event is None:
                 self.onUnexpectedDisconnect()
                 break
-            except asyncio.CancelledError:
-                break
-            if isinstance(event, str):
-                self.onUpdateUUID(event)
-            else:
-                self.onUpdateGamestate(Gamestate.fromPrimitive(event))
+            self.onUpdateGamestate(Gamestate.fromPrimitive(event))
     
     def send(self, event: tp.Dict):
         event[EF.HASH] = hash(self.gamestate)
         sendPrimitive(event, self.writer)
     
     def setup(self):
-        self.setupBarrier.acquire()
         self.title("Web Set")
         self.bottomPanel = BottomPanel(self, self)
         self.refresh()
@@ -59,11 +99,6 @@ class Root(tk.Tk):
         with self.lock:
             self.gamestate = gamestate
             ... # update GUI
-    
-    def onUpdateUUID(self, uuid: str):
-        self.uuid = uuid
-        print('Initialization ok')
-        self.setupBarrier.release()
     
     def onUnexpectedDisconnect(self):
         msg = 'Error: Unexpected disconnection by server.'
@@ -148,44 +183,25 @@ class BottomPanel(ttk.Frame):
 
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    url = input('Server (ip_addr:port) > ')
-    try:
-        host, port_str = url.split(':')
-    except ValueError:
-        host = 'localhost'
-        port_str = url
-    port = int(port_str)
-    print(f'Connecting to {host}:{port}... ', end='', flush=True)
-    reader, writer = await asyncio.open_connection(host, port)
-    print('ok')
+    async with Network() as (reader, writer):
+        print('Waiting for player ID assignment... ', end='', flush=True)
+        uuid = await recvPrimitive(reader)
+        print('ok')
+        print('Waiting for gamestate... ', end='', flush=True)
+        gamestate = Gamestate.fromPrimitive(await recvPrimitive(reader))
+        print('ok')
+        queue = asyncio.Queue()
+        receiveTask = asyncio.create_task(receiver(reader, queue))
 
-    try:
-        root: Root | None = None
-        lock = asyncio.Lock()
-        await lock.acquire()
-        def runGUI():
-            nonlocal root
-            root = Root(reader, writer)
-            lock.release()
-            print('Waiting for initialization...')
-            root.mainloop()
-
-        taskTk = asyncio.create_task(asyncio.to_thread(runGUI))
-        await lock.acquire()
-        assert root is not None
-        taskRecvLoop = asyncio.create_task(root.recvLoop())
+        root = Root(queue, writer, uuid, gamestate)
+        
         try:
-            await taskTk
+            await root.asyncMainloop()
         except asyncio.CancelledError:
             pass
         finally:
-            taskRecvLoop.cancel()
-            await taskRecvLoop
-    finally:
-        print('closing... ', end='', flush=True)
-        writer.close()
-        await writer.wait_closed()
-        print('ok')
+            receiveTask.cancel()
+            await receiveTask
 
 if __name__ == "__main__":
     asyncio.run(main())
