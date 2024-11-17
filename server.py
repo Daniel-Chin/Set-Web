@@ -5,6 +5,7 @@ import random
 import time
 import copy
 import io
+import traceback
 
 from uuid import uuid4
 
@@ -69,6 +70,7 @@ class Server:
             print(f'Client handler task cancelled for {addr}')
         except Exception as e:
             print(f'Error with client {addr}: {e}')
+            traceback.print_exc()
         finally:
             print(f'Closing connection to {addr}...')
             writer.close()
@@ -197,7 +199,7 @@ class Server:
                 assert isinstance(x, int) and isinstance(y, int)
                 card = self.gamestate.public_zone[x][y]
                 if card is None:
-                    print(f'Warning: {myself} tried to toggle an empty card slot')
+                    # print(f'Warning: {uuid} tried to toggle an empty card slot in public zone')
                     return
                 card.toggle(uuid)
                 self.gamestate.clearVoteAccept()
@@ -206,7 +208,11 @@ class Server:
                 player = self.gamestate.seekPlayer(target_uuid)
                 x = event[CEF.TARGET_VALUE]
                 assert isinstance(x, int)
-                card = player.display_case[x]
+                try:
+                    card = player.display_case[x]
+                except IndexError:
+                    # print(f'Warning: {uuid} tried to toggle an empty card slot in display case')
+                    return
                 card.toggle(uuid)
                 self.gamestate.clearVoteAccept()
             elif type_ == CET.CLEAR_MY_SELECTIONS:

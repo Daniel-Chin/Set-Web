@@ -5,6 +5,7 @@ from asyncio import StreamReader, StreamWriter
 import threading
 from contextlib import asynccontextmanager
 import time
+from abc import ABC, abstractmethod
 
 import tkinter as tk
 from tkinter import ttk, font
@@ -144,6 +145,10 @@ class Root(tk.Tk):
         upperBody = ttk.Frame(self)
         upperBody.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.leftPanel = LeftPanel(self, upperBody)
+        rightBody = ttk.Frame(upperBody)
+        rightBody.pack(side=tk.RIGHT, fill=tk.BOTH)
+        self.publicZoneTopPanel = PublicZoneTopPanel(self, rightBody)
+        self.publicZone = PublicZone(self, rightBody)
         self.refresh()
     
     def onUpdateGamestate(self, gamestate: Gamestate):
@@ -167,7 +172,8 @@ class Root(tk.Tk):
     def refresh(self):
         self.bottomPanel.refresh()
         self.leftPanel.refresh()
-        ...
+        self.publicZoneTopPanel.refresh()
+        self.publicZone.refresh()
 
     def getPlayer(self, player_i: int):
         return self.gamestate.players[player_i]
@@ -264,6 +270,7 @@ class LeftPanel(ttk.Frame):
             ]
         for playerStripe in self.playerStripes:
             playerStripe.refresh()
+        self.deckArea.refresh()
 
 class SelfConfigBar(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
@@ -351,6 +358,10 @@ class PlayerStripe(ttk.Frame):
         )
         self.thicknessIndicator.pack(side=tk.TOP, padx=PADX, pady=PADY)
 
+        ttk.Label(self.col_2, text='Wins:', anchor=tk.W).pack(
+            side=tk.TOP, fill=tk.X, padx=PADX, pady=(PADY, 0),
+        )
+        
         self.winCounter = WinCounter(root, self.col_2, player_i)
         self.winCounter.pack(side=tk.TOP, padx=PADX, pady=PADY)
     
@@ -457,6 +468,7 @@ class SmartCardWidget(ttk.Frame):
     def refresh(self, smartCard: SmartCard | None):
         for label in self.checkLabels:
             label.destroy()
+        self.checkLabels.clear()
         if smartCard is not None:
             for uuid in smartCard.selected_by:
                 player = self.root.gamestate.seekPlayer(uuid)
@@ -510,6 +522,7 @@ class ThicknessIndicator(tk.Canvas):
             parent, 
             width=size[0], height=size[1], 
         )
+        self.width_ = size[0]
         self.last_thickness = 0
     
     def refresh(self, n_cards: int):
@@ -517,43 +530,58 @@ class ThicknessIndicator(tk.Canvas):
             return
         self.last_thickness = n_cards
         self.delete('all')
-        width = self.winfo_width()
+        # width = max(10, self.winfo_width())
         for i in range(n_cards):
             y = i * THICKNESS_INDICATOR_CARD_INTERVAL + 1
             self.create_line(
-                0, y, width, y, 
+                0, y, self.width_, y, 
                 fill='black', 
                 width=THICKNESS_INDICATOR_CARD_THICKNESS, 
             )
 
-class WinCounter(ttk.Spinbox):
+class DeltaSpinbox(ttk.Spinbox, ABC):
     def __init__(
         self, root: Root, parent: tk.Widget | tk.Tk, 
-        player_i: int,
+        from_: int, 
     ):
         super().__init__(
-            parent, from_=0, to=999, state='readonly',
+            parent, from_=from_, to=999, state='readonly',
             width=0, 
             command=self.onClick,
         )
         self.root = root
-        self.player_i = player_i
-        self.set(0)
-        self.last_value = 0
+        self.last_value: int | None = None
     
     def onClick(self):
+        if self.last_value is None:
+            return
         delta = int(self.get()) - self.last_value
         self.last_value += delta
-        self.root.submit({ 
-            CEF.TYPE: CET.ACC_N_WINS, 
-            CEF.TARGET_PLAYER: self.root.getPlayer(self.player_i).uuid, 
-            CEF.TARGET_VALUE: delta, 
-        })
+        self.submitDelta(delta)
+    
+    @abstractmethod
+    def submitDelta(self, delta: int):
+        raise NotImplementedError()
     
     def refresh(self, value: int):
         if self.last_value != value:
             self.set(value)
             self.last_value = value
+
+class WinCounter(DeltaSpinbox):
+    def __init__(
+        self, root: Root, parent: tk.Widget | tk.Tk, 
+        player_i: int,
+    ):
+        super().__init__(root, parent, 0)
+        self.player_i = player_i
+
+    def submitDelta(self, delta: int):
+        self.root.submit({ 
+            CEF.TYPE: CET.ACC_N_WINS, 
+            CEF.TARGET_PLAYER: self.root.getPlayer(self.player_i).uuid, 
+            CEF.TARGET_VALUE: delta, 
+        })
 
 class DeckArea(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
@@ -608,6 +636,96 @@ class DeckArea(ttk.Frame):
         disableIf(self.buttonNewGame, (
             self.root.getMyself().voting == Vote.NEW_GAME
         ))
+
+class PublicZoneTopPanel(ttk.Frame):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
+        super().__init__(parent)
+        self.root = root
+        self.pack(side=tk.TOP, fill=tk.X)
+        self.config(borderwidth=1, relief=tk.SOLID)
+
+        self.buttonClearSelection = ttk.Button(
+            self, text='Clear Selection', command=self.clearSelection, 
+        )
+        self.buttonClearSelection.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+
+        self.colSizer = PublicZoneSizer(root, self, 1)
+        self.colSizer.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+        ttk.Label(
+            self, text='# of cols:', 
+        ).pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+
+        self.rowSizer = PublicZoneSizer(root, self, 0)
+        self.rowSizer.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+        ttk.Label(
+            self, text='# of rows:', 
+        ).pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+    
+    def clearSelection(self):
+        self.root.submit({ CEF.TYPE: CET.CLEAR_MY_SELECTIONS })
+    
+    def refresh(self):
+        zone = self.root.gamestate.public_zone
+        self.rowSizer.refresh(len(zone))
+        self.colSizer.refresh(len(zone[0]))
+        nothing_selected = True
+        for smartCard in self.root.gamestate.AllSmartCards():
+            if self.root.getMyself().uuid in smartCard.selected_by:
+                nothing_selected = False
+                break
+        disableIf(self.buttonClearSelection, nothing_selected)
+
+class PublicZoneSizer(DeltaSpinbox):
+    def __init__(
+        self, root: Root, parent: tk.Widget | tk.Tk, 
+        axis: int, 
+    ):
+        super().__init__(root, parent, 1)
+        self.axis = axis
+
+    def submitDelta(self, delta: int):
+        acc = [0, 0]
+        acc[self.axis] = delta
+        self.root.submit({
+            CEF.TYPE: CET.ACC_PUBLIC_ZONE_SHAPE, 
+            CEF.TARGET_VALUE: tuple(acc), 
+        })
+
+class PublicZone(ttk.Frame):
+    def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
+        super().__init__(parent)
+        self.root = root
+        self.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.config(borderwidth=1, relief=tk.SOLID)
+
+        self.smartCardWidgets: tp.List[tp.List[SmartCardWidget]] = [[]]
+    
+    def refresh(self):
+        old_n_rows = len(self.smartCardWidgets)
+        old_n_cols = len(self.smartCardWidgets[0])
+        zone = self.root.gamestate.public_zone
+        new_n_rows = len(zone)
+        new_n_cols = len(zone[0])
+        if old_n_rows != new_n_rows or old_n_cols != new_n_cols:
+            for row in self.smartCardWidgets:
+                for widget in row:
+                    widget.destroy()
+            self.smartCardWidgets = [
+                [SmartCardWidget(
+                    self.root, self, True, (y, x), 
+                    zone[y][x], 
+                ) for x in range(new_n_cols)]
+                for y in range(new_n_rows)
+            ]
+            for y, row in enumerate(self.smartCardWidgets):
+                for x, widget in enumerate(row):
+                    widget.grid(
+                        row=y, column=x, sticky=tk.NSEW, 
+                        padx=PADX, pady=PADY,
+                    )
+        for y, row in enumerate(self.smartCardWidgets):
+            for x, widget in enumerate(row):
+                widget.refresh(zone[y][x])
 
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
