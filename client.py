@@ -28,6 +28,7 @@ HEAT_LASTS_FOR = 3 # sec
 FPS = 30
 
 BOLD_STYLE = 'Bold.TLabel'
+SMALL_STYLE = 'small.TLabel'
 
 @asynccontextmanager
 async def Network():
@@ -121,15 +122,15 @@ class Root(tk.Tk):
         self.title('Web Set')
         style = ttk.Style()
         style.theme_use('clam')
-        pad_kw = dict()
+        padding = (
+            round(FONT_SIZE * 0.5), round(FONT_SIZE * 0.1), 
+        )
         for style_name in (
             'TLabel', 'TButton', 'TSpinbox',
         ):
             style.configure(
                 style_name, 
-                padding=(
-                    round(FONT_SIZE * 0.5), round(FONT_SIZE * 0.1), 
-                ),
+                padding=padding,
                 font=(FONT, FONT_SIZE),
             )
         defaultFont = font.nametofont("TkDefaultFont")
@@ -138,7 +139,11 @@ class Root(tk.Tk):
         style.configure('TSpinbox', arrowsize=FONT_SIZE)
         style.configure(
             BOLD_STYLE, font=(FONT, FONT_SIZE, font.BOLD), 
-            **pad_kw, 
+            padding=padding, 
+        )
+        style.configure(
+            SMALL_STYLE, font=(FONT, FONT_SIZE // 3), 
+            padding=(0, 0), 
         )
 
         self.bottomPanel = BottomPanel(self, self)
@@ -363,7 +368,7 @@ class PlayerStripe(ttk.Frame):
         )
         
         self.winCounter = WinCounter(root, self.col_2, player_i)
-        self.winCounter.pack(side=tk.TOP, padx=PADX, pady=PADY)
+        self.winCounter.pack(side=tk.TOP, padx=PADX, pady=(0, PADY))
     
     def refresh(self):
         player = self.root.getPlayer(self.player_i)
@@ -442,9 +447,9 @@ class SmartCardWidget(ttk.Frame):
             padx = round(SMALL_CARD_RATIO * PADX)
             pady = round(SMALL_CARD_RATIO * PADY)
 
-        self.checksBar = ttk.Frame(self)
+        self.checksBar = ttk.Frame(self, style=self.unique_style_name)
         self.checksBar.pack(side=tk.TOP, pady=(pady, 0))
-        self.newSelectionLabel('', '')
+        self.newSelectionLabel('', 'white')
         self.checkLabels: tp.List[ttk.Label] = []
     
         self.canvas = tk.Canvas(self, width=card_width, height=card_height)
@@ -458,10 +463,11 @@ class SmartCardWidget(ttk.Frame):
         label = ttk.Label(
             self.checksBar, text=text, background=background, 
             foreground='white', 
+            style=SMALL_STYLE,
         )
         padx = 3
-        if not self.is_public_not_display_case:
-            padx = round(SMALL_CARD_RATIO * padx)
+        # if not self.is_public_not_display_case:
+        #     padx = round(SMALL_CARD_RATIO * padx)
         label.pack(side=tk.LEFT, padx=padx)
         return label
     
@@ -516,13 +522,13 @@ class SmartCardWidget(ttk.Frame):
 class ThicknessIndicator(tk.Canvas):
     def __init__(
         self, parent: tk.Widget | tk.Tk, 
-        size: tp.Tuple[int, int], 
+        size_: tp.Tuple[int, int], 
     ):
         super().__init__(
             parent, 
-            width=size[0], height=size[1], 
+            width=size_[0], height=size_[1], 
         )
-        self.width_ = size[0]
+        self.size_ = size_
         self.last_thickness = 0
     
     def refresh(self, n_cards: int):
@@ -532,9 +538,9 @@ class ThicknessIndicator(tk.Canvas):
         self.delete('all')
         # width = max(10, self.winfo_width())
         for i in range(n_cards):
-            y = i * THICKNESS_INDICATOR_CARD_INTERVAL + 1
+            y = self.size_[1] - i * THICKNESS_INDICATOR_CARD_INTERVAL + 1
             self.create_line(
-                0, y, self.width_, y, 
+                0, y, self.size_[0], y, 
                 fill='black', 
                 width=THICKNESS_INDICATOR_CARD_THICKNESS, 
             )
@@ -596,27 +602,27 @@ class DeckArea(ttk.Frame):
         self.thicknessIndicator.pack(side=tk.LEFT, padx=PADX, pady=PADY)
 
         rightHalf = ttk.Frame(self)
-        rightHalf.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        rightHalf.pack(side=tk.LEFT, fill=tk.BOTH)
 
         self.buttonDealCard = ttk.Button(
             rightHalf, text='Deal 1 Card', command=self.dealCard, 
         )
         self.buttonDealCard.pack(
-            side=tk.TOP, padx=PADX, pady=PADY,
+            side=tk.TOP, padx=PADX, pady=(PADY, 0), expand=True, fill=tk.X,
         )
 
         self.buttonCountCards = ttk.Button(
             rightHalf, text='Count Cards', command=self.countCards,
         )
         self.buttonCountCards.pack(
-            side=tk.TOP, padx=PADX, pady=PADY,
+            side=tk.TOP, padx=PADX, pady=(PADY, 0), expand=True, fill=tk.X,
         )
 
         self.buttonNewGame = ttk.Button(
             rightHalf, text='New Game', command=self.newGame,
         )
         self.buttonNewGame.pack(
-            side=tk.TOP, padx=PADX, pady=PADY,
+            side=tk.TOP, padx=PADX, pady=PADY, expand=True, fill=tk.X,
         )
     
     def dealCard(self):
