@@ -337,6 +337,8 @@ class Server:
                 card.birth = time.time()
                 winner.display_case.append(card)
             self.time_of_last_harvest = time.time()
+            for player in self.gamestate.players:
+                player.shouted_set = None
         elif consensus == Vote.COUNT_CARDS:
             buf = io.StringIO()
             for player in self.gamestate.players:
