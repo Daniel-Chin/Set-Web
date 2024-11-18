@@ -312,7 +312,11 @@ class BottomPanel(ttk.Frame):
     def animate(self):
         disableIf(self.buttonVoteAccept, (
             time.time() - self.root.last_info_change < ALLOW_ACCEPT_AFTER_CHANGE
-        ) or self.root.getMyself().voting == Vote.ACCEPT)
+        ) or (
+            self.root.getMyself().voting == Vote.ACCEPT
+        ) or (
+            self.root.gamestate.uniqueShoutSetPlayer() is None
+        ))
         self.root.after(1000 // FPS, self.animate)
 
 class LeftPanel(ttk.Frame):
