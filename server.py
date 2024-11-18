@@ -55,8 +55,13 @@ class Server:
 
     async def handleClient(self, reader: StreamReader, writer: StreamWriter):
         addr = writer.get_extra_info('peername')
-        uuid = str(uuid4())
         print(f'New connection from {addr}')
+        handshake = await recvPrimitive(reader)
+        if handshake != HANDSHAKE:
+            print(f'Handshake failed for {addr} --- expected {HANDSHAKE}, got {handshake}')
+            writer.close()
+            return
+        uuid = str(uuid4())
         print(f'Assigning UUID {uuid[:4]}')
         await self.onPlayerJoin(uuid, writer)
         

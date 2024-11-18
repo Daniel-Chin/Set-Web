@@ -20,6 +20,8 @@ CARD_ASPECT = (43, 62)
 SVG = './texture.svg'
 PNG = './cache/texture.png'
 
+HANDSHAKE = 'I solemnly swear that I am up to no good.'
+
 def boolsToBytes(bools: tp.Iterator[bool]) -> bytes:
     byte_array = bytearray()
     current_byte = 0
