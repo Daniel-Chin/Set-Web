@@ -97,7 +97,8 @@ class Server:
             print('ok')
 
     async def start(self):
-        print(f'Starting server on port {self.port}')
+        print(f'Starting server on port {self.port}...')
+        print('I\'m ready for client connections!')
         server = await asyncio.start_server(self.handleClient, '', self.port)
 
         async with server:
