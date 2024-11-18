@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import time
 from abc import ABC, abstractmethod
 import math
+import gzip
 
 import tkinter as tk
 from tkinter import ttk, font
@@ -786,6 +787,12 @@ async def main():
         assert SET(event[SEF.TYPE]) == SET.YOU_ARE
         uuid = event[SEF.CONTENT]
         print('ok')
+        print('My player ID:', uuid)
+        print('Waiting for texture...')
+        texture_data = gzip.decompress(await recvStream(reader))
+        print('ok')
+        with open(PNG, 'wb') as f:
+            f.write(texture_data)
         print('Waiting for gamestate...')
         event = await recvPrimitive(reader)
         assert SET(event[SEF.TYPE]) == SET.GAMESTATE

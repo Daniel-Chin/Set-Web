@@ -11,12 +11,16 @@ from hashlib import sha256
 
 import tkinter as tk
 import tkinter.ttk as ttk
+from tqdm import tqdm
 
 PACKET_LEN_PREFIX_LEN = 8
 
 Card = tp.Tuple[int, int, int, int]
 
 CARD_ASPECT = (43, 62)
+
+SVG = './texture.svg'
+PNG = './cache/texture.png'
 
 def boolsToBytes(bools: tp.Iterator[bool]) -> bytes:
     byte_array = bytearray()
@@ -97,12 +101,30 @@ class ClientEventType(str, Enum):
     CLEAR_MY_SELECTIONS = 'CLEAR_MY_SELECTIONS'
     DEAL_CARD = 'DEAL_CARD'
 
-async def sendPayload(payload: bytes, writer: asyncio.StreamWriter):
-    prefix = format(len(payload), f'0{PACKET_LEN_PREFIX_LEN}d').encode()
+def sendPrefix(payload_size: int, writer: asyncio.StreamWriter):
+    prefix = format(payload_size, f'0{PACKET_LEN_PREFIX_LEN}d').encode()
     assert len(prefix) <= PACKET_LEN_PREFIX_LEN
     writer.write(prefix)
+
+async def sendPayload(payload: bytes, writer: asyncio.StreamWriter):
+    sendPrefix(len(payload), writer)
     writer.write(payload)
     await writer.drain()
+
+async def streamPayload(payload: bytes, writer: asyncio.StreamWriter):
+    sendPrefix(len(payload), writer)
+    for i in range(0, len(payload), 1024):
+        writer.write(payload[i:i+1024])
+        await writer.drain()
+
+async def recvStream(reader: asyncio.StreamReader):
+    prefix = await reader.readexactly(PACKET_LEN_PREFIX_LEN)
+    payload_len = int(prefix)
+    payload = []
+    for _ in tqdm(range(payload_len // 1024), desc='Downloading', unit='KB'):
+        payload.append(await reader.readexactly(1024))
+    payload.append(await reader.readexactly(payload_len % 1024))
+    return b''.join(payload)
 
 def primitiveToPayload(x, /):
     payload = gzip.compress(json.dumps(x).encode())

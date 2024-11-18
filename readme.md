@@ -1,5 +1,6 @@
 # Set Web
 - `pip install -r requirements.txt`
+- `python rasterize.py`
 - `python server.py`
 - `python client.py`
 

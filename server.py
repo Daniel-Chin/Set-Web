@@ -8,6 +8,8 @@ import time
 import copy
 import io
 import traceback
+import gzip
+from functools import cached_property
 
 from uuid import uuid4
 
@@ -56,8 +58,7 @@ class Server:
         uuid = str(uuid4())
         print(f'New connection from {addr}')
         print(f'Assigning UUID {uuid}')
-        self.writers[uuid] = writer
-        await self.onPlayerJoin(uuid)
+        await self.onPlayerJoin(uuid, writer)
         
         try:
             while True:
@@ -123,17 +124,27 @@ class Server:
                 print('broadcast failed on', uuid, ':', e)
                 continue
     
-    async def onPlayerJoin(self, uuid: str):
-        self.gamestate.players.append(Player(
-            str(uuid), f'Player {len(self.gamestate.players)}', 
-            f'{random.randint(0, 100)},{random.randint(0, 100)},{random.randint(0, 100)}', 
-        ))
-        writer = self.writers[uuid]
+    async def onPlayerJoin(self, uuid: str, writer: StreamWriter):
         await sendPrimitive({
             SEF.TYPE: SET.YOU_ARE,
             SEF.CONTENT: uuid,
         }, writer)
+        await streamPayload(self.texture, writer)
+        self.writers[uuid] = writer
+        self.gamestate.players.append(Player(
+            str(uuid), f'Player {len(self.gamestate.players)}', 
+            f'{random.randint(0, 100)},{random.randint(0, 100)},{random.randint(0, 100)}', 
+        ))
         await self.broadcastGamestate()
+    
+    @cached_property
+    def texture(self):
+        try:
+            with open(PNG, 'rb') as f:
+                return gzip.compress(f.read())
+        except FileNotFoundError:
+            input('Hint: Did you run rasterize.py? Press Enter to see exception...')
+            raise
     
     async def onPlayerLeave(self, uuid: str):
         self.writers.pop(uuid)
@@ -171,6 +182,7 @@ class Server:
                 value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, str)
                 myself.name = value
+                print(f'{uuid} changed name to "{value}"')
             elif type_ == CET.CHANGE_COLOR:
                 value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, str)
