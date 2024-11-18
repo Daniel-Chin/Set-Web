@@ -172,7 +172,7 @@ class Server:
     async def handleEvent(self, uuid: str, event: dict):
         type_ = CET(event[CEF.TYPE])
         myself = self.gamestate.seekPlayer(uuid)
-        print('client event:', myself.name, type_)
+        print(f'client event: "{myself.name}" {type_.value()}')
         try:
             if   type_ == CET.VOTE:
                 self.checkHash(event)
