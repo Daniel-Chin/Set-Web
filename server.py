@@ -176,7 +176,7 @@ class Server:
         print(f'client event: "{myself.name}" {type_.value}')
         try:
             if   type_ == CET.VOTE:
-                self.checkHash(event)
+                # self.checkHash(event)
                 myself.voting = Vote(event[CEF.VOTE])
                 if (
                     myself.voting == Vote.ACCEPT and 
@@ -185,11 +185,11 @@ class Server:
                     myself.voting = Vote.IDLE
                 await self.resolveVotes()
             elif type_ == CET.CALL_SET:
-                self.checkHash(event)
+                # self.checkHash(event)
                 myself.shouted_set = time.time() - self.time_of_last_harvest
                 self.gamestate.clearVoteAccept()
             elif type_ == CET.CANCEL_CALL_SET:
-                self.checkHash(event)
+                # self.checkHash(event)
                 myself.shouted_set = None
                 self.gamestate.clearVoteAccept()
             elif type_ == CET.CHANGE_NAME:
@@ -278,7 +278,7 @@ class Server:
                 }, self.writers[uuid])
                 return
             elif type_ == CET.TAKE:
-                self.checkHash(event)
+                # self.checkHash(event)
                 self.harvest(uuid)
             else:
                 raise ValueError(f'Unknown event type: {type_}')
