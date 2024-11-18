@@ -29,8 +29,6 @@ from client_utils import *
 ALLOW_ACCEPT_AFTER_CHANGE = 1 # sec
 HEAT_LASTS_FOR = 3 # sec
 
-FPS = 30
-
 BOLD_STYLE = 'Bold.TLabel'
 SMALL_STYLE = 'small.TLabel'
 
