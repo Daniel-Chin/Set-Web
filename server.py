@@ -120,7 +120,7 @@ class Server:
         # )
     
     async def broadcast(self, payload: bytes):
-        for uuid, writer in self.writers.items():
+        for uuid, writer in [*self.writers.items()]:    # in case of concurrent modification
             try:
                 await self.sendGamestate(writer, payload)
             except Exception as e:
