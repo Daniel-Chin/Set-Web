@@ -9,8 +9,12 @@ import json
 import asyncio
 from hashlib import sha256
 
-import tkinter as tk
-import tkinter.ttk as ttk
+try:
+    import tkinter as tk
+    import tkinter.ttk as ttk
+except ImportError:
+    print('tkinter not available. If you are running the server without GUI, this is fine.')
+    input('Press enter to continue...')
 from tqdm import tqdm
 
 PACKET_LEN_PREFIX_LEN = 8
