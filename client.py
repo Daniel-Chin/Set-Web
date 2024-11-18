@@ -22,6 +22,7 @@ from shared import (
 from env_wrap import *
 from gamestate import *
 from texture import Texture
+from client_utils import *
 
 ALLOW_ACCEPT_AFTER_CHANGE = 1 # sec
 HEAT_LASTS_FOR = 3 # sec

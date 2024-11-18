@@ -9,12 +9,6 @@ import json
 import asyncio
 from hashlib import sha256
 
-try:
-    import tkinter as tk
-    import tkinter.ttk as ttk
-except ImportError:
-    print('tkinter not available. If you are running the server without GUI, this is fine.')
-    input('Press enter to continue...')
 from tqdm import tqdm
 
 PACKET_LEN_PREFIX_LEN = 8
@@ -145,13 +139,6 @@ async def recvPrimitive(reader: asyncio.StreamReader):
 
 def deterministicHash(x: tp.Any, /):
     return sha256(json.dumps(x).encode()).hexdigest()
-
-def disableIf(button: tk.Button | ttk.Button, condition: bool):
-    if condition:
-        button.config(state=tk.DISABLED)
-    else:
-        if button.cget('state').string == tk.DISABLED:
-            button.config(state=tk.NORMAL)
 
 def rgbToHex(r: int, g: int, b: int):
     return f'#{r:02x}{g:02x}{b:02x}'
