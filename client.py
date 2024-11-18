@@ -537,7 +537,7 @@ class SmartCardWidget(ttk.Frame):
         self.canvas   .bind('<Button-1>', self.onClick)
         self.checksBar.bind('<Button-1>', self.onClick)
 
-        self.last_rendered_card: SmartCard | None | bool = False
+        self.last_rendered_card: Card | None | bool = False
         self.cached_base_color = (255, 255, 255)
         self.setHeat(0)
 
