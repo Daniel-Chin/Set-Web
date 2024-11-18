@@ -235,9 +235,8 @@ class Server:
                 player = self.gamestate.seekPlayer(target_uuid)
                 x = event[CEF.TARGET_VALUE]
                 assert isinstance(x, int)
-                try:
-                    card = player.display_case[x]
-                except IndexError:
+                card = player.display_case[x]
+                if card is None:
                     # print(f'Warning: {uuid[:4]} tried to toggle an empty card slot in display case')
                     return
                 card.toggle(uuid)
@@ -323,13 +322,13 @@ class Server:
     async def resolveVotes(self):
         # dont forget to set self.time_of_last_harvest
         votes: tp.Set[Vote] = set()
-        for players in self.gamestate.players:
-            votes.add(players.voting)
+        for player in self.gamestate.players:
+            votes.add(player.voting)
         if len(votes) != 1:
             return
         consensus = votes.pop()
-        for winner in self.gamestate.players:
-            winner.voting = Vote.IDLE
+        for player in self.gamestate.players:
+            player.voting = Vote.IDLE
         if consensus == Vote.IDLE:
             return
         elif consensus == Vote.NEW_GAME:
@@ -338,11 +337,11 @@ class Server:
             for row in self.gamestate.public_zone:
                 for i in range(len(row)):
                     row[i] = None
-            for winner in self.gamestate.players:
-                winner.voting = Vote.IDLE
-                winner.shouted_set = None
-                winner.wealth_thickness = 0
-                winner.display_case.clear()
+            for player in self.gamestate.players:
+                player.voting = Vote.IDLE
+                player.shouted_set = None
+                player.wealth_thickness = 0
+                player.display_case = Player.newDisplayCase()
             self.time_of_last_harvest = time.time()
         elif consensus == Vote.UNDO:
             self.time_of_last_harvest = time.time()
@@ -360,23 +359,32 @@ class Server:
                         the_set.append(card)
                         row[i] = None
             for player in self.gamestate.players:
-                for card in player.display_case:
+                taken = False
+                for i, card in enumerate(player.display_case):
+                    if card is None:
+                        continue
                     if winner.uuid in card.selected_by:
                         the_set.append(card)
-                    else:
-                        winner.wealth_thickness += 1
-                player.display_case.clear()
-            for card in the_set:
-                card.selected_by.remove(winner.uuid)
+                        taken = True
+                        player.display_case[i] = None
+                if taken or player.uuid == winner.uuid:
+                    for card in player.display_case:
+                        if card is not None:
+                            player.wealth_thickness += 1
+                    player.display_case = Player.newDisplayCase()
+            for i, card in enumerate(the_set):
+                card.selected_by.remove(player.uuid)
                 card.birth = time.time()
-                winner.display_case.append(card)
+                winner.display_case[i] = card
             self.time_of_last_harvest = time.time()
             for player in self.gamestate.players:
                 player.shouted_set = None
         elif consensus == Vote.COUNT_CARDS:
             buf = io.StringIO()
             for player in self.gamestate.players:
-                score = player.wealth_thickness + len(player.display_case)
+                score = player.wealth_thickness + len(
+                    [x for x in player.display_case if x is not None]
+                )
                 print(player.name, ':', score, file=buf)
             buf.seek(0)
             payload = primitiveToPayload({

@@ -9,6 +9,10 @@ from shared import *
 
 @dataclass()
 class Player:
+    @staticmethod
+    def newDisplayCase():
+        return [None] * 4
+
     uuid: str
     name: str
     color: str
@@ -16,14 +20,14 @@ class Player:
     shouted_set: tp.Optional[float] = None  # timestamp
     wealth_thickness: int = 0
     n_of_wins: int = 0
-    display_case: tp.List[SmartCard] = field(default_factory=list)
+    display_case: tp.List[SmartCard | None] = field(default_factory=newDisplayCase)
     display_case_hidden: bool = False
 
     def mutableHash(self, verbose: bool = False):
         t = (
             self.uuid, self.name, self.color, self.voting.value, 
             self.shouted_set, self.wealth_thickness, self.n_of_wins, 
-            tuple([card.mutableHash() for card in self.display_case]), 
+            tuple([card and card.mutableHash() for card in self.display_case]), 
             self.display_case_hidden, 
         )
         if verbose:
@@ -33,7 +37,7 @@ class Player:
 
     def toPrimitive(self):
         d = asdict(self)
-        d['display_case'] = [card.toPrimitive() for card in self.display_case]
+        d['display_case'] = [card and card.toPrimitive() for card in self.display_case]
         d['voting'] = self.voting.value
         return d
     
@@ -47,7 +51,7 @@ class Player:
             shouted_set=d['shouted_set'], 
             wealth_thickness=d['wealth_thickness'], 
             n_of_wins=d['n_of_wins'], 
-            display_case=[SmartCard.fromPrimitive(card) for card in d['display_case']], 
+            display_case=[card and SmartCard.fromPrimitive(card) for card in d['display_case']], 
             display_case_hidden=d['display_case_hidden'], 
         )
 
@@ -187,7 +191,8 @@ class Gamestate:
                     yield card
         for player in self.players:
             for card in player.display_case:
-                yield card
+                if card is not None:
+                    yield card
     
     def printDebug(self, file=sys.stdout):
         print('Gamestate:', file=file)
