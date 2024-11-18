@@ -5,6 +5,7 @@ from asyncio import StreamReader, StreamWriter
 from contextlib import asynccontextmanager
 import time
 from abc import ABC, abstractmethod
+import math
 
 import tkinter as tk
 from tkinter import ttk, font
@@ -394,7 +395,7 @@ class PlayerStripe(ttk.Frame):
         self.thicknessIndicator = ThicknessIndicator(
             self.col_2, THICKNESS_INDICATOR_WEALTH, 
         )
-        self.thicknessIndicator.pack(side=tk.TOP, padx=PADX, pady=(PADY, 0))
+        self.thicknessIndicator.pack(side=tk.TOP, padx=PADX, pady=(0, 0))
 
         ttk.Label(self.col_2, text='Wins:', anchor=tk.W).pack(
             side=tk.TOP, fill=tk.X, padx=PADX, pady=(0, 0),
@@ -573,8 +574,8 @@ class ThicknessIndicator(tk.Canvas):
         self.last_thickness = n_cards
         self.delete('all')
         # width = max(10, self.winfo_width())
-        for i in range(n_cards):
-            y = self.size_[1] - i * THICKNESS_INDICATOR_CARD_INTERVAL + 1
+        for i in range(0, math.ceil(n_cards / THICKNESS_INDICATOR_CARD_PER_LINE)):
+            y = self.size_[1] - i * THICKNESS_INDICATOR_CARD_INTERVAL
             self.create_line(
                 0, y, self.size_[0], y, 
                 fill='black', 
@@ -635,30 +636,34 @@ class DeckArea(ttk.Frame):
         self.thicknessIndicator = ThicknessIndicator(
             self, THICKNESS_INDICATOR_DECK, 
         )
-        self.thicknessIndicator.pack(side=tk.LEFT, padx=PADX, pady=PADY)
-
-        rightHalf = ttk.Frame(self)
-        rightHalf.pack(side=tk.LEFT, fill=tk.BOTH)
+        self.thicknessIndicator.grid(
+            column=0, row=0, rowspan=2, 
+            padx=PADX, pady=PADY, 
+        )
 
         self.buttonDealCard = root.newButton(
-            rightHalf, text='_Deal 1 Card', command=self.dealCard, 
+            self, text='_Deal 1 Card', command=self.dealCard, 
         )
-        self.buttonDealCard.pack(
-            side=tk.TOP, padx=PADX, pady=(PADY, 0), expand=True, fill=tk.X,
+        self.buttonDealCard.grid(
+            column=1, row=0, rowspan=2, 
+            padx=0, pady=PADY, sticky=tk.NSEW,
         )
+        self.columnconfigure(1, weight=1)
 
         self.buttonCountCards = root.newButton(
-            rightHalf, text='Count Cards', command=self.countCards,
+            self, text='Count Cards', command=self.countCards,
         )
-        self.buttonCountCards.pack(
-            side=tk.TOP, padx=PADX, pady=(PADY, 0), expand=True, fill=tk.X,
+        self.buttonCountCards.grid(
+            column=2, row=0,
+            padx=PADX, pady=(PADY, 0), sticky=tk.NSEW,
         )
 
         self.buttonNewGame = root.newButton(
-            rightHalf, text='New Game', command=self.newGame,
+            self, text='New Game', command=self.newGame,
         )
-        self.buttonNewGame.pack(
-            side=tk.TOP, padx=PADX, pady=PADY, expand=True, fill=tk.X,
+        self.buttonNewGame.grid(
+            column=2, row=1,
+            padx=PADX, pady=PADY, sticky=tk.NSEW,
         )
     
     def dealCard(self):

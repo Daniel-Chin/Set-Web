@@ -23,11 +23,11 @@ SMALL_CARD_RATIO = 0.6
 # thickness indicator (width, height) in pixels
 THICKNESS_INDICATOR_WEALTH = (
     round(70 * GLOBAL_SCALING), 
-    round(30 * GLOBAL_SCALING), 
+    round(40 * GLOBAL_SCALING), 
 )
 THICKNESS_INDICATOR_DECK = (
     round(300 * GLOBAL_SCALING), 
-    round(120 * GLOBAL_SCALING), 
+    round(80 * GLOBAL_SCALING), 
 )
 
 # how thick is one line
@@ -35,6 +35,9 @@ THICKNESS_INDICATOR_CARD_THICKNESS = 1
 
 # interval between lines
 THICKNESS_INDICATOR_CARD_INTERVAL = 2
+
+# how many cards per line
+THICKNESS_INDICATOR_CARD_PER_LINE = 3
 
 # padding in pixels
 PADX = round(12 * GLOBAL_SCALING)
