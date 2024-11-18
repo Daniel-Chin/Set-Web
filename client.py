@@ -179,8 +179,9 @@ class Root(tk.Tk):
         upperBody = ttk.Frame(self)
         upperBody.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.leftPanel = LeftPanel(self, upperBody)
+        self.leftPanel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         rightBody = ttk.Frame(upperBody)
-        rightBody.pack(side=tk.RIGHT, fill=tk.BOTH)
+        rightBody.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self.publicZoneTopPanel = PublicZoneTopPanel(self, rightBody)
         self.publicZone = PublicZone(self, rightBody)
         self.refresh()
@@ -321,7 +322,6 @@ class LeftPanel(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
         super().__init__(parent)
         self.root = root
-        self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.selfConfigBar = SelfConfigBar(root, self)
         self.playerStripes: tp.List[PlayerStripe] = []
@@ -814,9 +814,13 @@ class PublicZone(ttk.Frame):
             for y, row in enumerate(self.smartCardWidgets):
                 for x, widget in enumerate(row):
                     widget.grid(
-                        row=y, column=x, sticky=tk.NSEW, 
+                        row=y, column=x, 
                         padx=PADX, pady=PADY,
                     )
+            for x in range(new_n_cols):
+                self.grid_columnconfigure(x, weight=1)
+            for y in range(new_n_rows):
+                self.grid_rowconfigure   (y, weight=1)
         for y, row in enumerate(self.smartCardWidgets):
             for x, widget in enumerate(row):
                 widget.refresh(zone[y][x])
