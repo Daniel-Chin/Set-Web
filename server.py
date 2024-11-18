@@ -272,8 +272,14 @@ class Server:
                     continue
                 if x >= new_n_cols or y >= new_n_rows:
                     stashed.append(card)
-            zone[y] = row[:new_n_cols]
-        zone = zone[:new_n_rows]
+            if new_n_cols < old_n_cols:
+                zone[y] = row[:new_n_cols]
+            else:
+                row.extend([None] * (new_n_cols - old_n_cols))
+        if new_n_rows < old_n_rows:
+            zone = zone[:new_n_rows]
+        else:
+            zone.extend([[None] * new_n_cols for _ in range(new_n_rows - old_n_rows)])
         for row in zone:
             for x, card in enumerate(row):
                 if card is None:
@@ -285,6 +291,7 @@ class Server:
                 continue
             break
         assert not stashed
+        self.gamestate.public_zone = zone
     
     async def resolveVotes(self):
         # dont forget to set self.time_of_last_harvest

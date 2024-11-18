@@ -29,6 +29,8 @@ FPS = 30
 BOLD_STYLE = 'Bold.TLabel'
 SMALL_STYLE = 'small.TLabel'
 
+os.environ['MESA_LOADER_DRIVER_OVERRIDE'] = 'iris'
+
 @asynccontextmanager
 async def Network():
     url = input('Server (ip_addr:port) > ')
