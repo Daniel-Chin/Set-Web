@@ -103,6 +103,7 @@ class Root(tk.Tk):
             # print('processQueue...')
             self.processQueue()
             # print('ok')
+            self.animate()
             # print('update GUI...')
             self.update()
             next_update_time = time.time() + 1 / FPS
@@ -244,6 +245,10 @@ class Root(tk.Tk):
         if key is not None:
             self.bind(f'<{key}>', lambda _: button.invoke(), add=True)
         return button
+    
+    def animate(self):
+        self.leftPanel.animate()
+        self.publicZone.animate()
 
 class BottomPanel(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
@@ -329,6 +334,10 @@ class LeftPanel(ttk.Frame):
         for playerStripe in self.playerStripes:
             playerStripe.refresh()
         self.deckArea.refresh()
+    
+    def animate(self):
+        for playerStripe in self.playerStripes:
+            playerStripe.animate()
 
 class SelfConfigBar(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
@@ -468,6 +477,9 @@ class PlayerStripe(ttk.Frame):
 
         self.thicknessIndicator.refresh(player.wealth_thickness)
         self.winCounter.refresh(player.n_of_wins)
+    
+    def animate(self):
+        self.displayCase.animate()
 
 class DisplayCase(ttk.Frame):
     def __init__(
@@ -490,6 +502,10 @@ class DisplayCase(ttk.Frame):
     def refresh(self, player: Player):
         for widget, smartCard in zip(self.smartCardWidgets, player.display_case):
             widget.refresh(smartCard)
+    
+    def animate(self):
+        for smartCardWidget in self.smartCardWidgets:
+            smartCardWidget.animate()
 
 class SmartCardWidget(ttk.Frame):
     def __init__(
@@ -538,8 +554,6 @@ class SmartCardWidget(ttk.Frame):
         self.last_rendered_card: Card | None | bool = False
         self.cached_base_color = (255, 255, 255)
         self.setHeat(0)
-
-        self.root.after(1000 // FPS, self.animate)
 
     def newCheck(self, color: str):
         canvas = tk.Canvas(
@@ -605,7 +619,6 @@ class SmartCardWidget(ttk.Frame):
                 self.root.serverClock.get() - self.smartCard.birth
             ) / HEAT_LASTS_FOR
         self.setHeat(heat)
-        self.root.after(1000 // FPS, self.animate)
 
     def setHeat(self, heat: float):
         heat = min(1.0, max(0.0, heat))
@@ -855,6 +868,11 @@ class PublicZone(ttk.Frame):
         for y, row in enumerate(self.smartCardWidgets):
             for x, widget in enumerate(row):
                 widget.refresh(zone[y][x])
+    
+    def animate(self):
+        for row in self.smartCardWidgets:
+            for widget in row:
+                widget.animate()
 
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
