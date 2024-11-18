@@ -473,7 +473,6 @@ class DisplayCase(ttk.Frame):
         super().__init__(parent)
         self.root = root
         self.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        self.config(borderwidth=1, relief=tk.SOLID)
         self.player_i = player_i
 
         self.smartCardWidgets = [
@@ -481,7 +480,7 @@ class DisplayCase(ttk.Frame):
             for i in range(4)
         ]
         [x.pack(
-            side=tk.LEFT, fill=tk.Y,
+            side=tk.LEFT, 
         ) for x in self.smartCardWidgets]
     
     def refresh(self, player: Player):
