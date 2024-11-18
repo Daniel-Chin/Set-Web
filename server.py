@@ -373,7 +373,7 @@ class Server:
                             player.wealth_thickness += 1
                     player.display_case = Player.newDisplayCase()
             for i, card in enumerate(the_set):
-                card.selected_by.remove(player.uuid)
+                card.selected_by.remove(winner.uuid)
                 card.birth = time.time()
                 winner.display_case[i] = card
             self.time_of_last_harvest = time.time()
