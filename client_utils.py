@@ -5,11 +5,18 @@ import time
 import tkinter as tk
 import tkinter.ttk as ttk
 
+def getState(widget: tk.Widget):
+    s = widget.cget('state')
+    try:
+        return s.string
+    except AttributeError:
+        return s
+
 def disableIf(button: tk.Button | ttk.Button, condition: bool):
     if condition:
         button.config(state=tk.DISABLED)
     else:
-        if button.cget('state').string == tk.DISABLED:
+        if getState(button) == tk.DISABLED:
             button.config(state=tk.NORMAL)
 
 class ServerClock:
