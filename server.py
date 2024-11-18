@@ -76,6 +76,7 @@ class Server:
                 except (
                     asyncio.IncompleteReadError, 
                     BrokenPipeError, 
+                    ConnectionAbortedError, ConnectionResetError, 
                 ):
                     print(f'Client {addr} disconnected')
                     break
