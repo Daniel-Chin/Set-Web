@@ -528,9 +528,11 @@ class SmartCardWidget(ttk.Frame):
             highlightthickness=0, bd=0,
         )
         self.canvas.pack(side=tk.TOP, padx=padx, pady=(0, pady))
-        self.canvas.bind('<Button-1>', self.onClick)
+        self.          bind('<Button-1>', self.onClick)
+        self.canvas   .bind('<Button-1>', self.onClick)
+        self.checksBar.bind('<Button-1>', self.onClick)
 
-        self.last_rendered_card = None
+        self.last_rendered_card: SmartCard | None | bool = False
         self.cached_base_color = (255, 255, 255)
         self.setHeat(0)
 
@@ -578,6 +580,10 @@ class SmartCardWidget(ttk.Frame):
         if self.last_rendered_card != card:
             self.last_rendered_card = card
             self.canvas.delete('all')
+            self.canvas.create_rectangle(
+                0, 0, CARD_WIDTH, CARD_HEIGHT,
+                fill='white', outline='white',
+            )
             if card is not None:
                 self.canvas.create_image(
                     0, 0, anchor=tk.NW, 
