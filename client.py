@@ -111,6 +111,7 @@ class Root(tk.Tk):
             self.processQueue()
             # print('ok')
             await asyncio.gather(*self.submitters)
+            self.submitters.clear()
             # print('idle...')
             await asyncio.sleep(max(0.001, next_update_time - time.time()))
             # print('ok')
