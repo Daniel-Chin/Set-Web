@@ -10,7 +10,7 @@ from shared import *
 @dataclass()
 class Player:
     @staticmethod
-    def newDisplayCase():
+    def newDisplayCase() -> tp.List[SmartCard | None]:
         return [None] * 4
 
     uuid: str
