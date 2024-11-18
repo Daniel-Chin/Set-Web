@@ -13,6 +13,7 @@ from tkinter import ttk, font
 from tkinter import messagebox
 from tkinter import simpledialog
 from uuid import uuid4
+import json
 
 from shared import *
 from shared import (
@@ -32,9 +33,29 @@ FPS = 30
 BOLD_STYLE = 'Bold.TLabel'
 SMALL_STYLE = 'small.TLabel'
 
+CONFIG = './cache/client_config.json'
+
 @asynccontextmanager
 async def Network():
-    url = input('Server (ip_addr:port) > ')
+    try:
+        with open(CONFIG, 'r') as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        config = {}
+    try:
+        last_url = config['last_url']
+    except KeyError:
+        last_url = None
+    else:
+        print(f'Press Enter to connect to: {last_url}')
+    url = input('Server (ip_addr:port) > ').strip()
+    if url:
+        with open(CONFIG, 'w') as f:
+            config['last_url'] = url
+            json.dump(config, f)
+    else:
+        assert last_url is not None
+        url = last_url
     try:
         host, port_str = url.split(':')
     except ValueError:
