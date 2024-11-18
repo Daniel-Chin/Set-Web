@@ -4,7 +4,7 @@ from shared import *
 # lower this value if it takes too long to rasterize
 TEXTURE_RESOLUTION = 2160
 
-GLOBAL_SCALING = 1.6
+GLOBAL_SCALING = 1.0
 
 FONT_SIZE = round(18 * GLOBAL_SCALING)
 

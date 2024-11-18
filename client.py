@@ -1,5 +1,5 @@
-import typing as tp
 import os
+import typing as tp
 import asyncio
 from asyncio import StreamReader, StreamWriter
 from contextlib import asynccontextmanager
@@ -28,8 +28,6 @@ FPS = 30
 
 BOLD_STYLE = 'Bold.TLabel'
 SMALL_STYLE = 'small.TLabel'
-
-os.environ['MESA_LOADER_DRIVER_OVERRIDE'] = 'iris'
 
 @asynccontextmanager
 async def Network():
@@ -155,6 +153,9 @@ class Root(tk.Tk):
         self.publicZoneTopPanel = PublicZoneTopPanel(self, rightBody)
         self.publicZone = PublicZone(self, rightBody)
         self.refresh()
+        def freezeSize():
+            self.geometry(f'{self.winfo_width()}x{self.winfo_height()}')
+        self.after(100, freezeSize)
     
     def onUpdateGamestate(self, gamestate: Gamestate):
         if not self.gamestate.isCardSelectionEqual(gamestate):
@@ -409,7 +410,9 @@ class PlayerStripe(ttk.Frame):
         self.labelName.config(background=rgbStrToHex(player.color))
         self.labelShoutSet.config(
             text=(
-                f'Set! {player.shouted_set:.2f} sec' if player.shouted_set is not None else ''
+                f'Set! {player.shouted_set:.2f} sec' 
+                if player.shouted_set is not None else 
+                ' ' * 35
             ), 
             background=(
                 'black' if player.shouted_set is not None else 'white'
@@ -517,7 +520,9 @@ class SmartCardWidget(ttk.Frame):
             if card is not None:
                 self.canvas.create_image(
                     0, 0, anchor=tk.NW, 
-                    image=self.root.texture.get(*card), 
+                    image=self.root.texture.get(
+                        *card, not self.is_public_not_display_case, 
+                    ), 
                 )
     
     def animate(self):
@@ -682,22 +687,22 @@ class PublicZoneTopPanel(ttk.Frame):
         self.config(borderwidth=1, relief=tk.SOLID)
 
         self.buttonClearSelection = root.newButton(
-            self, text='Clear Selection (Esc)', command=self.clearSelection, 
+            self, text='Clear Select (Esc)', command=self.clearSelection, 
             special_shortcut='Escape',
         )
         self.buttonClearSelection.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
 
         self.colSizer = PublicZoneSizer(root, self, 1)
-        self.colSizer.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+        self.colSizer.pack(side=tk.RIGHT, padx=(0, PADX), pady=PADY)
         ttk.Label(
-            self, text='# of cols:', 
-        ).pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+            self, text='# cols:', 
+        ).pack(side=tk.RIGHT, padx=0, pady=PADY)
 
         self.rowSizer = PublicZoneSizer(root, self, 0)
-        self.rowSizer.pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+        self.rowSizer.pack(side=tk.RIGHT, padx=(0, PADX), pady=PADY)
         ttk.Label(
-            self, text='# of rows:', 
-        ).pack(side=tk.RIGHT, padx=PADX, pady=PADY)
+            self, text='# rows:', 
+        ).pack(side=tk.RIGHT, padx=0, pady=PADY)
     
     def clearSelection(self):
         self.root.submit({ CEF.TYPE: CET.CLEAR_MY_SELECTIONS })

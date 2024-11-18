@@ -33,8 +33,8 @@ class Texture:
 
         family_photo = Image.open(PNG)
 
-        self.photoImgs: tp.Dict[tp.Tuple[
-            int, int, int, int, 
+        self.imgs: tp.Dict[tp.Tuple[
+            int, int, int, int, bool, 
         ], ImageTk.PhotoImage] = {}
         for c, f, n, s in iterAllCards():
             cropped = family_photo.crop(bboxOf(
@@ -47,10 +47,14 @@ class Texture:
                 round(CARD_RESOLUTION[1] * 0.9),
             ))
             resized = de_bordered.resize((CARD_WIDTH, CARD_HEIGHT))
-            self.photoImgs[(c, f, n, s)] = ImageTk.PhotoImage(resized)
+            self.imgs[(c, f, n, s, False)] = ImageTk.PhotoImage(resized)
+            self.imgs[(c, f, n, s, True)] = ImageTk.PhotoImage(resized.resize((
+                round(SMALL_CARD_RATIO * CARD_WIDTH),
+                round(SMALL_CARD_RATIO * CARD_HEIGHT),
+            )))
     
-    def get(self, c: int, f: int, n: int, s: int):
-        return self.photoImgs[(c, f, n, s)]
+    def get(self, c: int, f: int, n: int, s: int, is_small: bool):
+        return self.imgs[(c, f, n, s, is_small)]
 
 def test():
     root = tk.Tk()
@@ -62,9 +66,10 @@ def test():
         f = random.randint(0, 2)
         n = random.randint(0, 2)
         s = random.randint(0, 2)
+        is_small = random.choice([True, False])
         label = tk.Label(root, text=f'[{c=}, {f=}, {n=}, {s=}]')
         label.pack(side=tk.LEFT)
-        img = texture.get(c, f, n, s)
+        img = texture.get(c, f, n, s, is_small)
         label = tk.Label(root, image=img)   # type: ignore
         label.pack(side=tk.LEFT)
 
