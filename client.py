@@ -107,11 +107,18 @@ class Root(tk.Tk):
             self.is_closed = True
         self.protocol("WM_DELETE_WINDOW", onClose)
         while not self.is_closed:
+            # print('processQueue...')
             self.processQueue()
+            # print('ok')
+            # print('update GUI...')
             self.update()
             next_update_time = time.time() + 1 / FPS
+            # print('processQueue...')
             self.processQueue()
+            # print('ok')
+            # print('idle...')
             await asyncio.sleep(max(0, next_update_time - time.time()))
+            # print('ok')
     
     def processQueue(self):
         while not self.queue.empty():
@@ -184,6 +191,7 @@ class Root(tk.Tk):
         self.after(100, freezeSize)
     
     def onUpdateGamestate(self, gamestate: Gamestate):
+        print('Server: update gamestate')
         for smartCard in gamestate.AllSmartCards():
             self.serverClock.onReceiveServerTime(smartCard.birth)
         if not self.gamestate.isCardSelectionEqual(gamestate):
