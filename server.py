@@ -278,6 +278,7 @@ class Server:
                 }, self.writers[uuid])
                 return
             elif type_ == CET.TAKE:
+                self.checkHash(event)
                 self.harvest(uuid)
             else:
                 raise ValueError(f'Unknown event type: {type_}')
