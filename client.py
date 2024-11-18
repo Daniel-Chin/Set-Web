@@ -3,7 +3,6 @@ import typing as tp
 import asyncio
 from asyncio import StreamReader, StreamWriter
 from contextlib import asynccontextmanager
-import time
 from abc import ABC, abstractmethod
 import math
 import gzip
@@ -97,6 +96,7 @@ class Root(tk.Tk):
         self.gamestate = gamestate
         self.is_closed = False
         self.last_info_change = 0
+        self.serverClock = ServerClock()
 
         self.setup()
     
@@ -182,6 +182,8 @@ class Root(tk.Tk):
         self.after(100, freezeSize)
     
     def onUpdateGamestate(self, gamestate: Gamestate):
+        for smartCard in gamestate.AllSmartCards():
+            self.serverClock.onReceiveServerTime(smartCard.birth)
         if not self.gamestate.isCardSelectionEqual(gamestate):
             self.last_info_change = time.time()
         self.gamestate = gamestate
@@ -553,7 +555,9 @@ class SmartCardWidget(ttk.Frame):
         if not self.winfo_exists():
             return
         if self.smartCard is not None:
-            heat = 1.0 - (time.time() - self.smartCard.birth) / HEAT_LASTS_FOR
+            heat = 1.0 - (
+                self.root.serverClock.get() - self.smartCard.birth
+            ) / HEAT_LASTS_FOR
             self.setHeat(heat)
         self.root.after(1000 // FPS, self.animate)
 
