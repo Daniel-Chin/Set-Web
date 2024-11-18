@@ -2,7 +2,6 @@ import typing as tp
 import os
 import asyncio
 from asyncio import StreamReader, StreamWriter
-import threading
 from contextlib import asynccontextmanager
 import time
 from abc import ABC, abstractmethod
@@ -72,7 +71,6 @@ class Root(tk.Tk):
         self.writer = writer
         self.uuid = uuid
         self.gamestate = gamestate
-        self.lock = threading.Lock()
         self.is_closed = False
         self.last_info_change = 0
 
@@ -157,11 +155,11 @@ class Root(tk.Tk):
         self.refresh()
     
     def onUpdateGamestate(self, gamestate: Gamestate):
-        with self.lock:
-            if not self.gamestate.isCardSelectionEqual(gamestate):
-                self.last_info_change = time.time()
-            self.gamestate = gamestate
-            self.refresh()
+        if not self.gamestate.isCardSelectionEqual(gamestate):
+            self.last_info_change = time.time()
+        self.gamestate = gamestate
+
+        self.refresh()
     
     def onUnexpectedDisconnect(self):
         msg = 'Error: Unexpected disconnection by server.'
@@ -244,11 +242,10 @@ class BottomPanel(ttk.Frame):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
 
     def callSet(self):
-        with self.root.lock:
-            if self.root.getMyself().shouted_set is None:
-                self.root.submit({ CEF.TYPE: CET.CALL_SET })
-            else:
-                self.root.submit({ CEF.TYPE: CET.CANCEL_CALL_SET })
+        if self.root.getMyself().shouted_set is None:
+            self.root.submit({ CEF.TYPE: CET.CALL_SET })
+        else:
+            self.root.submit({ CEF.TYPE: CET.CANCEL_CALL_SET })
     
     def voteAccept(self):
         if self.buttonVoteAccept['state'] == tk.DISABLED:
