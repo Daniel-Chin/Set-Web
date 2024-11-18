@@ -324,6 +324,11 @@ class Server:
         votes: tp.Set[Vote] = set()
         for player in self.gamestate.players:
             votes.add(player.voting)
+        
+        # trying accept threshold = 1
+        if Vote.ACCEPT in votes:
+            votes = set([Vote.ACCEPT])
+        
         if len(votes) != 1:
             return
         consensus = votes.pop()
