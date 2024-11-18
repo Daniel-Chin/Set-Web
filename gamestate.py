@@ -54,6 +54,9 @@ class Player:
             display_case=[card and SmartCard.fromPrimitive(card) for card in d['display_case']], 
             display_case_hidden=d['display_case_hidden'], 
         )
+    
+    def getRGB(self):
+        return [int(x) for x in self.color.split(',')]
 
 @dataclass()
 class SmartCard:

@@ -445,7 +445,7 @@ class PlayerStripe(ttk.Frame):
         player = self.root.getPlayer(self.player_i)
         
         self.labelName.config(text=player.name)
-        self.labelName.config(background=rgbStrToHex(player.color))
+        self.labelName.config(background=rgbToHex(*player.getRGB()))
         self.labelShoutSet.config(
             text=(
                 f'Set! {player.shouted_set:.2f} sec' 
@@ -527,8 +527,9 @@ class SmartCardWidget(ttk.Frame):
         self.canvas.pack(side=tk.TOP, padx=padx, pady=(0, pady))
         self.canvas.bind('<Button-1>', self.onClick)
 
-        self.setHeat(0)
         self.last_rendered_card = None
+        self.cached_base_color = (255, 255, 255)
+        self.setHeat(0)
 
         self.root.after(1000 // FPS, self.animate)
 
@@ -551,12 +552,23 @@ class SmartCardWidget(ttk.Frame):
         for check in self.checks:
             check.destroy()
         self.checks.clear()
+        colors = []
         if smartCard is not None:
             for uuid in smartCard.selected_by:
                 player = self.root.gamestate.seekPlayer(uuid)
-                hx = rgbStrToHex(player.color)
-                check = self.newCheck(hx)
+                rgb = player.getRGB()
+                colors.append(rgb)
+                check = self.newCheck(rgbToHex(*rgb))
                 self.checks.append(check)
+        def mergeColors():
+            colors_ = [(255, 255, 255), *colors]
+            loadings = [7.0] + [1.0] * len(colors)
+            merger = [0.0, 0.0, 0.0]
+            for c, l in zip(colors_, loadings):
+                for i in range(3):
+                    merger[i] += c[i] * l
+            return tuple(round(x / sum(loadings)) for x in merger)
+        self.cached_base_color = mergeColors()
 
         card = smartCard and smartCard.card
         if self.last_rendered_card != card:
@@ -573,20 +585,26 @@ class SmartCardWidget(ttk.Frame):
     def animate(self):
         if not self.winfo_exists():
             return
-        if self.smartCard is not None:
+        if self.smartCard is None:
+            heat = 0.0
+        else:
             heat = 1.0 - (
                 self.root.serverClock.get() - self.smartCard.birth
             ) / HEAT_LASTS_FOR
-            self.setHeat(heat)
+        self.setHeat(heat)
         self.root.after(1000 // FPS, self.animate)
 
     def setHeat(self, heat: float):
         heat = min(1.0, max(0.0, heat))
-        luminosity = round((1 - heat) * 255)
+        darkness = round(heat * 255)
+        color = [
+            min(255, max(0, x - darkness)) for x in self.cached_base_color
+        ]
         style = ttk.Style()
-        style.configure(self.unique_style_name, background=rgbToHex(
-            luminosity, luminosity, luminosity, 
-        ))
+        style.configure(
+            self.unique_style_name, 
+            background=rgbToHex(*color), 
+        )
     
     def onClick(self, _):
         if self.is_public_not_display_case:
