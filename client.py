@@ -274,7 +274,7 @@ class BottomPanel(ttk.Frame):
         )
 
         self.buttonTake = root.newButton(
-            self, text='T_ake', command=self.take, 
+            self, text='_Take', command=self.take, 
         )
         self.buttonTake.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
