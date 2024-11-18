@@ -1,6 +1,7 @@
 try:
     from env import *
 except ImportError:
+    print('env.py not found, creating a new one.')
     import os
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
