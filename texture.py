@@ -33,9 +33,10 @@ class Texture:
 
         family_photo = Image.open(PNG)
 
-        self.imgs: tp.Dict[tp.Tuple[
+        self.photoImgs: tp.Dict[tp.Tuple[
             int, int, int, int, bool, 
         ], ImageTk.PhotoImage] = {}
+        self.just_trying_to_have_a_reference = []
         for c, f, n, s in iterAllCards():
             cropped = family_photo.crop(bboxOf(
                 c * 3 + f, n * 3 + s, 
@@ -47,14 +48,17 @@ class Texture:
                 round(CARD_RESOLUTION[1] * 0.9),
             ))
             resized = de_bordered.resize((CARD_WIDTH, CARD_HEIGHT))
-            self.imgs[(c, f, n, s, False)] = ImageTk.PhotoImage(resized)
-            self.imgs[(c, f, n, s, True)] = ImageTk.PhotoImage(resized.resize((
+            self.just_trying_to_have_a_reference.append(resized)
+            self.photoImgs[(c, f, n, s, False)] = ImageTk.PhotoImage(resized)
+            small = resized.resize((
                 round(SMALL_CARD_RATIO * CARD_WIDTH),
                 round(SMALL_CARD_RATIO * CARD_HEIGHT),
-            )))
+            ))
+            self.just_trying_to_have_a_reference.append(small)
+            self.photoImgs[(c, f, n, s, True)] = ImageTk.PhotoImage(small)
     
     def get(self, c: int, f: int, n: int, s: int, is_small: bool):
-        return self.imgs[(c, f, n, s, is_small)]
+        return self.photoImgs[(c, f, n, s, is_small)]
 
 def test():
     root = tk.Tk()
