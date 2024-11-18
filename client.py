@@ -239,7 +239,7 @@ class BottomPanel(ttk.Frame):
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
-        self.animate()
+        self.root.after(1000 // FPS, self.animate)
 
     def clearMyVote(self):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
@@ -482,7 +482,7 @@ class SmartCardWidget(ttk.Frame):
         self.setHeat(0)
         self.last_rendered_card = None
 
-        self.animate()
+        self.root.after(1000 // FPS, self.animate)
 
     def newSelectionLabel(self, text: str, background: str):
         label = ttk.Label(
@@ -497,6 +497,7 @@ class SmartCardWidget(ttk.Frame):
         return label
     
     def refresh(self, smartCard: SmartCard | None):
+        self.smartCard = smartCard
         for label in self.checkLabels:
             label.destroy()
         self.checkLabels.clear()
