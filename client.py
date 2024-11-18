@@ -31,26 +31,14 @@ HEAT_LASTS_FOR = 3 # sec
 BOLD_STYLE = 'Bold.TLabel'
 SMALL_STYLE = 'small.TLabel'
 
-CONFIG = './cache/client_config.json'
-
 @asynccontextmanager
 async def Network():
-    try:
-        with open(CONFIG, 'r') as f:
-            config = json.load(f)
-    except FileNotFoundError:
-        config = {}
-    try:
-        last_url = config['last_url']
-    except KeyError:
-        last_url = None
-    else:
+    last_url = loadConfig().get('last_url', None)
+    if last_url is not None:
         print(f'Press Enter to connect to: {last_url}')
     url = input('Server (ip_addr:port) > ').strip()
     if url:
-        with open(CONFIG, 'w') as f:
-            config['last_url'] = url
-            json.dump(config, f)
+        writeConfig('last_url', url)
     else:
         assert last_url is not None
         url = last_url
@@ -371,6 +359,10 @@ class SelfConfigBar(ttk.Frame):
         )
         if new_name is None:
             return
+        self.changeNameTo(new_name)
+        writeConfig('last_name', new_name)
+    
+    def changeNameTo(self, new_name: str):
         self.root.submit({ CEF.TYPE: CET.CHANGE_NAME, CEF.TARGET_VALUE: new_name })
     
     def changeMyColor(self):
@@ -382,6 +374,10 @@ class SelfConfigBar(ttk.Frame):
         )
         if new_color is None:
             return
+        self.changeColorTo(new_color)
+        writeConfig('last_color', new_color)
+    
+    def changeColorTo(self, new_color: str):
         self.root.submit({ CEF.TYPE: CET.CHANGE_COLOR, CEF.TARGET_VALUE: new_color })
 
 class PlayerStripe(ttk.Frame):
@@ -883,6 +879,23 @@ async def main():
         receiveTask = asyncio.create_task(receiver(reader, queue))
 
         root = Root(queue, writer, uuid, gamestate)
+
+        def applyLastConfig():
+            config = loadConfig()
+            try:
+                last_name = config['last_name']
+            except KeyError:
+                pass
+            else:
+                root.leftPanel.selfConfigBar.changeNameTo(last_name)
+            try:
+                last_color = config['last_color']
+            except KeyError:
+                pass
+            else:
+                root.leftPanel.selfConfigBar.changeColorTo(last_color)
+
+        applyLastConfig()
         
         try:
             await root.asyncMainloop()

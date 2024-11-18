@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import typing as tp
 import time
+import json
 
 import tkinter as tk
 import tkinter.ttk as ttk
+
+CONFIG = './cache/client_config.json'
 
 def getState(widget: tk.Widget):
     s = widget.cget('state')
@@ -53,3 +56,16 @@ class Pinger:
         rtl = time.time() - self.last_png_time
         self.last_png_time += rtl
         return rtl
+
+def loadConfig():
+    try:
+        with open(CONFIG, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+def writeConfig(key: str, value: tp.Any):
+    config = loadConfig()
+    config[key] = value
+    with open(CONFIG, 'w') as f:
+        json.dump(config, f)
