@@ -370,7 +370,7 @@ class Server:
                 if taken or player.uuid == winner.uuid:
                     for card in player.display_case:
                         if card is not None:
-                            player.wealth_thickness += 1
+                            winner.wealth_thickness += 1
                     player.display_case = Player.newDisplayCase()
             for i, card in enumerate(the_set):
                 card.selected_by.remove(winner.uuid)
