@@ -23,6 +23,9 @@ CARD_WIDTH = round(100 * GLOBAL_SCALING)
 # size multiplier for cards in the display cases
 SMALL_CARD_RATIO = 0.6
 
+# the markers showing who selected what cards. in pixels
+SELECTION_MARKER_SIZE = round(12 * GLOBAL_SCALING)
+
 # thickness indicator (width, height) in pixels
 THICKNESS_INDICATOR_WEALTH = (
     round(70 * GLOBAL_SCALING), 

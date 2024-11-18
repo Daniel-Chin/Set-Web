@@ -513,10 +513,15 @@ class SmartCardWidget(ttk.Frame):
             padx = round(SMALL_CARD_RATIO * PADX)
             pady = round(SMALL_CARD_RATIO * PADY)
 
-        self.checksBar = ttk.Frame(self, style=self.unique_style_name)
-        self.checksBar.pack(side=tk.TOP, pady=(pady, 0))
-        self.newSelectionLabel('', 'white')
-        self.checkLabels: tp.List[ttk.Label] = []
+        self.checksBar = ttk.Frame(
+            self, style=self.unique_style_name, 
+            height=SELECTION_MARKER_SIZE, 
+        )
+        self.checksBar.pack_propagate(False)
+        self.checksBar.pack(side=tk.TOP, padx=PADX, pady=(max(
+            0, pady - SELECTION_MARKER_SIZE, 
+        ), 0), fill=tk.X)
+        self.checks: tp.List[tk.Canvas] = []
     
         self.canvas = tk.Canvas(self, width=card_width, height=card_height)
         self.canvas.pack(side=tk.TOP, padx=padx, pady=(0, pady))
@@ -527,29 +532,31 @@ class SmartCardWidget(ttk.Frame):
 
         self.root.after(1000 // FPS, self.animate)
 
-    def newSelectionLabel(self, text: str, background: str):
-        label = ttk.Label(
-            self.checksBar, text=text, background=background, 
-            foreground='white', 
-            style=SMALL_STYLE,
+    def newCheck(self, color: str):
+        canvas = tk.Canvas(
+            self.checksBar, width=SELECTION_MARKER_SIZE * 2, height=SELECTION_MARKER_SIZE,
         )
         padx = 3
         # if not self.is_public_not_display_case:
         #     padx = round(SMALL_CARD_RATIO * padx)
-        label.pack(side=tk.LEFT, padx=padx)
-        return label
+        canvas.pack(side=tk.LEFT, padx=(0, padx))
+        canvas.create_rectangle(
+            0, 0, SELECTION_MARKER_SIZE * 2, SELECTION_MARKER_SIZE,
+            fill=color, outline=color,
+        )
+        return canvas
     
     def refresh(self, smartCard: SmartCard | None):
         self.smartCard = smartCard
-        for label in self.checkLabels:
-            label.destroy()
-        self.checkLabels.clear()
+        for check in self.checks:
+            check.destroy()
+        self.checks.clear()
         if smartCard is not None:
             for uuid in smartCard.selected_by:
                 player = self.root.gamestate.seekPlayer(uuid)
                 hx = rgbStrToHex(player.color)
-                label = self.newSelectionLabel('X', hx)
-                self.checkLabels.append(label)
+                check = self.newCheck(hx)
+                self.checks.append(check)
 
         card = smartCard and smartCard.card
         if self.last_rendered_card != card:
