@@ -523,7 +523,10 @@ class SmartCardWidget(ttk.Frame):
         ), 0), fill=tk.X)
         self.checks: tp.List[tk.Canvas] = []
     
-        self.canvas = tk.Canvas(self, width=card_width, height=card_height)
+        self.canvas = tk.Canvas(
+            self, width=card_width, height=card_height, 
+            highlightthickness=0, bd=0,
+        )
         self.canvas.pack(side=tk.TOP, padx=padx, pady=(0, pady))
         self.canvas.bind('<Button-1>', self.onClick)
 
@@ -536,6 +539,7 @@ class SmartCardWidget(ttk.Frame):
     def newCheck(self, color: str):
         canvas = tk.Canvas(
             self.checksBar, width=SELECTION_MARKER_SIZE * 2, height=SELECTION_MARKER_SIZE,
+            highlightthickness=0, bd=0,
         )
         padx = 3
         # if not self.is_public_not_display_case:
@@ -562,7 +566,7 @@ class SmartCardWidget(ttk.Frame):
                 self.checks.append(check)
         def mergeColors():
             colors_ = [(255, 255, 255), *colors]
-            loadings = [7.0] + [1.0] * len(colors)
+            loadings = [5.0] + [1.0] * len(colors)
             merger = [0.0, 0.0, 0.0]
             for c, l in zip(colors_, loadings):
                 for i in range(3):
