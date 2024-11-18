@@ -64,9 +64,11 @@ class Server:
             while True:
                 try:
                     event = await recvPrimitive(reader)
-                except asyncio.IncompleteReadError:
+                except (
+                    asyncio.IncompleteReadError, 
+                    BrokenPipeError, 
+                ):
                     print(f'Client {addr} disconnected')
-                    await self.onPlayerLeave(uuid)
                     break
                 await self.handleEvent(uuid, event)
         except asyncio.CancelledError:
@@ -75,6 +77,7 @@ class Server:
             print(f'Error with client {addr}: {e}')
             traceback.print_exc()
         finally:
+            await self.onPlayerLeave(uuid)
             print(f'Closing connection to {addr}...')
             writer.close()
             try:
