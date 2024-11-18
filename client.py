@@ -64,7 +64,7 @@ async def Network():
     print(f'Connecting to {host}:{port}...')
     try:
         reader, writer = await asyncio.open_connection(host, port)
-    except ConnectionRefusedError:
+    except (ConnectionRefusedError, OSError):
         print('搞什么啊，没开服？')
         print('Remote server not online.')
         input('Press Enter to view exception')
