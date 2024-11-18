@@ -1,7 +1,7 @@
 from shared import *
 
 # lower this if the GUI window is sometimes unresponsive
-FPS = 30
+FPS = 10
 
 # your monitor height in pixels
 # lower this value if it takes too long to rasterize
