@@ -57,7 +57,7 @@ class Server:
         addr = writer.get_extra_info('peername')
         uuid = str(uuid4())
         print(f'New connection from {addr}')
-        print(f'Assigning UUID {uuid}')
+        print(f'Assigning UUID {uuid[:4]}')
         await self.onPlayerJoin(uuid, writer)
         
         try:
@@ -163,6 +163,7 @@ class Server:
     async def handleEvent(self, uuid: str, event: dict):
         type_ = CET(event[CEF.TYPE])
         myself = self.gamestate.seekPlayer(uuid)
+        print('client event:', myself.name, type_)
         try:
             if   type_ == CET.VOTE:
                 self.checkHash(event)
@@ -185,7 +186,7 @@ class Server:
                 value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, str)
                 myself.name = value
-                print(f'{uuid} changed name to "{value}"')
+                print(f'{uuid[:4]} changed name to "{value}"')
             elif type_ == CET.CHANGE_COLOR:
                 value = event[CEF.TARGET_VALUE]
                 assert isinstance(value, str)
@@ -195,7 +196,7 @@ class Server:
                     assert g in range(256)
                     assert b in range(256)
                 except Exception as e:
-                    print(f'Warning: {uuid} submitted invalid color: "{value}", resulting in {e}')
+                    print(f'Warning: {uuid[:4]} submitted invalid color: "{value}", resulting in {e}')
                     return
                 myself.color = f'{r},{g},{b}'
             elif type_ == CET.TOGGLE_DISPLAY_CASE_VISIBLE:
@@ -216,7 +217,7 @@ class Server:
                 assert isinstance(x, int) and isinstance(y, int)
                 card = self.gamestate.public_zone[x][y]
                 if card is None:
-                    # print(f'Warning: {uuid} tried to toggle an empty card slot in public zone')
+                    # print(f'Warning: {uuid[:4]} tried to toggle an empty card slot in public zone')
                     return
                 card.toggle(uuid)
                 self.gamestate.clearVoteAccept()
@@ -228,7 +229,7 @@ class Server:
                 try:
                     card = player.display_case[x]
                 except IndexError:
-                    # print(f'Warning: {uuid} tried to toggle an empty card slot in display case')
+                    # print(f'Warning: {uuid[:4]} tried to toggle an empty card slot in display case')
                     return
                 card.toggle(uuid)
                 self.gamestate.clearVoteAccept()
@@ -243,7 +244,7 @@ class Server:
                     if self.gamestate.cards_in_deck[idx]:
                         remaining.append(idx)
                 if not remaining:
-                    print(f'Warning: {uuid} tried to deal a card from the empty deck')
+                    print(f'Warning: {uuid[:4]} tried to deal a card from the empty deck')
                     return
                 vacant = None
                 for y, row in enumerate(self.gamestate.public_zone):
@@ -255,7 +256,7 @@ class Server:
                         continue
                     break
                 if vacant is None:
-                    print(f'Warning: {uuid} tried to deal a card into the full public zone')
+                    print(f'Warning: {uuid[:4]} tried to deal a card into the full public zone')
                     return
                 card = random.choice(remaining)
                 self.gamestate.cards_in_deck[card] = False
