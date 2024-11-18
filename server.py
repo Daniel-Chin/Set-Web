@@ -56,7 +56,11 @@ class Server:
     async def handleClient(self, reader: StreamReader, writer: StreamWriter):
         addr = writer.get_extra_info('peername')
         print(f'New connection from {addr}')
-        handshake = await recvPrimitive(reader)
+        try:
+            handshake = await recvPrimitive(reader)
+        except Exception as e:
+            handshake = None
+            print(f'Someone didn\'t handshake and caused {e}. Duh.')
         if handshake != HANDSHAKE:
             print(f'Handshake failed for {addr} --- expected {HANDSHAKE}, got {handshake}')
             writer.close()

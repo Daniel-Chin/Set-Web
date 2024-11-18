@@ -820,7 +820,7 @@ async def main():
         if filename.endswith('.txt'):
             os.remove(f'./logs/{filename}')
     async with Network() as (reader, writer):
-        sendPrimitive(HANDSHAKE, writer)
+        await sendPrimitive(HANDSHAKE, writer)
         print('Waiting for player ID assignment...')
         event = await recvPrimitive(reader)
         assert SET(event[SEF.TYPE]) == SET.YOU_ARE
