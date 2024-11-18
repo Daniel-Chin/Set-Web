@@ -91,6 +91,7 @@ class Root(tk.Tk):
         self.last_info_change = 0
         self.serverClock = ServerClock()
         self.pinger = Pinger(lambda: self.submit({ CEF.TYPE: CET.PING }))
+        self.submitters: tp.List[asyncio.Task] = []
 
         self.setup()
     
@@ -109,6 +110,7 @@ class Root(tk.Tk):
             # print('processQueue...')
             self.processQueue()
             # print('ok')
+            await asyncio.gather(*self.submitters)
             # print('idle...')
             await asyncio.sleep(max(0.001, next_update_time - time.time()))
             # print('ok')
@@ -144,7 +146,8 @@ class Root(tk.Tk):
     def submit(self, event: tp.Dict):
         event[CEF.HASH] = self.gamestate.mutableHash()
         co = sendPrimitive(event, self.writer)
-        asyncio.create_task(co)
+        task = asyncio.create_task(co)
+        self.submitters.append(task)
     
     def setup(self):
         self.texture = Texture(self)
