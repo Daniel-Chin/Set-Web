@@ -486,7 +486,6 @@ class DisplayCase(ttk.Frame):
     
     def refresh(self, player: Player):
         for widget, smartCard in zip(self.smartCardWidgets, player.display_case):
-            print(repr(smartCard))
             widget.refresh(smartCard)
 
 class SmartCardWidget(ttk.Frame):
