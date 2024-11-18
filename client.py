@@ -276,10 +276,10 @@ class BottomPanel(ttk.Frame):
             expand=True, fill=tk.X,
         )
 
-        self.buttonVoteAccept = root.newButton(
-            self, text='Vote _Accept', command=self.voteAccept, 
+        self.buttonTake = root.newButton(
+            self, text='T_ake', command=self.take, 
         )
-        self.buttonVoteAccept.pack(
+        self.buttonTake.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
@@ -290,8 +290,6 @@ class BottomPanel(ttk.Frame):
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
-        self.root.after(1000 // FPS, self.animate)
-
     def clearMyVote(self):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
 
@@ -301,10 +299,8 @@ class BottomPanel(ttk.Frame):
         else:
             self.root.submit({ CEF.TYPE: CET.CANCEL_CALL_SET })
     
-    def voteAccept(self):
-        if self.buttonVoteAccept['state'] == tk.DISABLED:
-            return
-        self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.ACCEPT })
+    def take(self):
+        self.root.submit({ CEF.TYPE: CET.TAKE })
     
     def voteUndo(self):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.UNDO })
@@ -320,16 +316,6 @@ class BottomPanel(ttk.Frame):
         disableIf(self.buttonVoteUndo, (
             self.root.getMyself().voting == Vote.UNDO
         ))
-    
-    def animate(self):
-        disableIf(self.buttonVoteAccept, (
-            time.time() - self.root.last_info_change < ALLOW_ACCEPT_AFTER_CHANGE
-        ) or (
-            self.root.getMyself().voting == Vote.ACCEPT
-        ) or (
-            self.root.gamestate.uniqueShoutSetPlayer() is None
-        ))
-        self.root.after(1000 // FPS, self.animate)
 
 class LeftPanel(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):

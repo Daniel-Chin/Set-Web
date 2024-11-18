@@ -102,6 +102,7 @@ class ClientEventType(str, Enum):
     CLEAR_MY_SELECTIONS = 'CLEAR_MY_SELECTIONS'
     DEAL_CARD = 'DEAL_CARD'
     PING = 'PING'
+    TAKE = 'TAKE'
 
 def sendPrefix(payload_size: int, writer: asyncio.StreamWriter):
     prefix = format(payload_size, f'0{PACKET_LEN_PREFIX_LEN}d').encode()

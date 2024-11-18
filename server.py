@@ -277,6 +277,8 @@ class Server:
                     SEF.TYPE: SET.PONG,
                 }, self.writers[uuid])
                 return
+            elif type_ == CET.TAKE:
+                self.harvest(uuid)
             else:
                 raise ValueError(f'Unknown event type: {type_}')
             await self.broadcast(self.gamestatePacket())
@@ -326,14 +328,9 @@ class Server:
         self.gamestate.public_zone = zone
     
     async def resolveVotes(self):
-        # dont forget to set self.time_of_last_harvest
         votes: tp.Set[Vote] = set()
         for player in self.gamestate.players:
             votes.add(player.voting)
-        
-        # trying accept threshold = 1
-        if Vote.ACCEPT in votes:
-            votes = set([Vote.ACCEPT])
         
         if len(votes) != 1:
             return
@@ -358,42 +355,9 @@ class Server:
             self.time_of_last_harvest = time.time()
             self.gamestate = self.undoTape.undo(self.gamestate)
         elif consensus == Vote.ACCEPT:
-            self.undoTape.recordNewState(self.gamestate)
             winner = self.gamestate.uniqueShoutSetPlayer()
             assert winner is not None
-            the_set: tp.List[SmartCard] = []
-            for row in self.gamestate.public_zone:
-                for i, card in enumerate(row):
-                    if card is None:
-                        continue
-                    if winner.uuid in card.selected_by:
-                        the_set.append(card)
-                        row[i] = None
-            for player in self.gamestate.players:
-                taken = False
-                for i, card in enumerate(player.display_case):
-                    if card is None:
-                        continue
-                    if winner.uuid in card.selected_by:
-                        the_set.append(card)
-                        taken = True
-                        player.display_case[i] = None
-                if taken or player.uuid == winner.uuid:
-                    for card in player.display_case:
-                        if card is not None:
-                            winner.wealth_thickness += 1
-                    player.display_case = Player.newDisplayCase()
-            for i, card in enumerate(the_set):
-                card.selected_by.remove(winner.uuid)
-                card.birth = time.time()
-                try:
-                    winner.display_case[i] = card
-                except IndexError:
-                    print('Error: tried to take more than 4 cards into display case')
-                    break
-            self.time_of_last_harvest = time.time()
-            for player in self.gamestate.players:
-                player.shouted_set = None
+            self.harvest(winner.uuid)
         elif consensus == Vote.COUNT_CARDS:
             buf = io.StringIO()
             for player in self.gamestate.players:
@@ -409,6 +373,43 @@ class Server:
             await self.broadcast(payload)
         else:
             raise ValueError(f'Unknown vote: {consensus}')
+    
+    def harvest(self, taker_uuid: str):
+            self.undoTape.recordNewState(self.gamestate)
+            taker = self.gamestate.seekPlayer(taker_uuid)
+            the_set: tp.List[SmartCard] = []
+            for row in self.gamestate.public_zone:
+                for i, card in enumerate(row):
+                    if card is None:
+                        continue
+                    if taker_uuid in card.selected_by:
+                        the_set.append(card)
+                        row[i] = None
+            for player in self.gamestate.players:
+                taken = False
+                for i, card in enumerate(player.display_case):
+                    if card is None:
+                        continue
+                    if taker_uuid in card.selected_by:
+                        the_set.append(card)
+                        taken = True
+                        player.display_case[i] = None
+                if taken or player.uuid == taker_uuid:
+                    for card in player.display_case:
+                        if card is not None:
+                            taker.wealth_thickness += 1
+                    player.display_case = Player.newDisplayCase()
+            for i, card in enumerate(the_set):
+                card.selected_by.remove(taker_uuid)
+                card.birth = time.time()
+                try:
+                    taker.display_case[i] = card
+                except IndexError:
+                    print('Error: tried to take more than 4 cards into display case')
+                    break
+            self.time_of_last_harvest = time.time()
+            for player in self.gamestate.players:
+                player.shouted_set = None
 
 def main():
     server = Server()
