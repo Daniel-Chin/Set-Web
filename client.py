@@ -110,7 +110,7 @@ class Root(tk.Tk):
             self.processQueue()
             # print('ok')
             # print('idle...')
-            await asyncio.sleep(max(0, next_update_time - time.time()))
+            await asyncio.sleep(max(0.001, next_update_time - time.time()))
             # print('ok')
     
     def processQueue(self):
