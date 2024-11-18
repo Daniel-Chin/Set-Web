@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as tp
+import sys
 from dataclasses import dataclass, asdict, field
 from pprint import pprint
 
@@ -188,10 +189,12 @@ class Gamestate:
             for card in player.display_case:
                 yield card
     
-    def printDebug(self):
-        print('Gamestate:')
-        print('hash', self.mutableHash(verbose=True))
-        pprint(self)
+    def printDebug(self, file=sys.stdout):
+        print('Gamestate:', file=file)
+        print('hash', self.mutableHash(
+            # verbose=True, 
+        ), file=file)
+        pprint(self, stream=file)
     
     def isCardSelectionEqual(self, other: Gamestate):
         for a, b in zip(self.AllSmartCards(), other.AllSmartCards()):

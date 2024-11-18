@@ -158,8 +158,9 @@ class Root(tk.Tk):
         if not self.gamestate.isCardSelectionEqual(gamestate):
             self.last_info_change = time.time()
         self.gamestate = gamestate
-
         self.refresh()
+        with open(f'./logs/{self.uuid}.txt', 'w') as f:
+            self.gamestate.printDebug(file=f)
     
     def onUnexpectedDisconnect(self):
         msg = 'Error: Unexpected disconnection by server.'
@@ -238,6 +239,8 @@ class BottomPanel(ttk.Frame):
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
+        self.animate()
+
     def clearMyVote(self):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
 
@@ -267,11 +270,11 @@ class BottomPanel(ttk.Frame):
             self.root.getMyself().voting == Vote.UNDO
         ))
     
-    def update(self):
+    def animate(self):
         disableIf(self.buttonVoteAccept, (
             time.time() - self.root.last_info_change < ALLOW_ACCEPT_AFTER_CHANGE
         ) or self.root.getMyself().voting == Vote.ACCEPT)
-        super().update()
+        self.root.after(1000 // FPS, self.animate)
 
 class LeftPanel(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
@@ -477,7 +480,9 @@ class SmartCardWidget(ttk.Frame):
         self.canvas.bind('<Button-1>', self.onClick)
 
         self.setHeat(0)
-        self.last_drew_card = smartCard and smartCard.card
+        self.last_rendered_card = None
+
+        self.animate()
 
     def newSelectionLabel(self, text: str, background: str):
         label = ttk.Label(
@@ -503,7 +508,8 @@ class SmartCardWidget(ttk.Frame):
                 self.checkLabels.append(label)
 
         card = smartCard and smartCard.card
-        if self.last_drew_card != card:
+        if self.last_rendered_card != card:
+            self.last_rendered_card = card
             self.canvas.delete('all')
             if card is not None:
                 self.canvas.create_image(
@@ -511,11 +517,13 @@ class SmartCardWidget(ttk.Frame):
                     image=self.root.texture.get(*card), 
                 )
     
-    def update(self):
+    def animate(self):
+        if not self.winfo_exists():
+            return
         if self.smartCard is not None:
             heat = 1.0 - (time.time() - self.smartCard.birth) / HEAT_LASTS_FOR
             self.setHeat(heat)
-        super().update()
+        self.root.after(1000 // FPS, self.animate)
 
     def setHeat(self, heat: float):
         heat = min(1.0, max(0.0, heat))
@@ -756,6 +764,9 @@ class PublicZone(ttk.Frame):
 
 async def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    for filename in os.listdir('./logs'):
+        if filename.endswith('.txt'):
+            os.remove(f'./logs/{filename}')
     async with Network() as (reader, writer):
         print('Waiting for player ID assignment...')
         event = await recvPrimitive(reader)

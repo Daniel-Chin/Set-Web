@@ -122,7 +122,8 @@ def disableIf(button: tk.Button | ttk.Button, condition: bool):
     if condition:
         button.config(state=tk.DISABLED)
     else:
-        button.config(state=tk.NORMAL)
+        if button.cget('state').string == tk.DISABLED:
+            button.config(state=tk.NORMAL)
 
 def rgbToHex(r: int, g: int, b: int):
     return f'#{r:02x}{g:02x}{b:02x}'
