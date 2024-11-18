@@ -375,7 +375,11 @@ class Server:
             for i, card in enumerate(the_set):
                 card.selected_by.remove(winner.uuid)
                 card.birth = time.time()
-                winner.display_case[i] = card
+                try:
+                    winner.display_case[i] = card
+                except IndexError:
+                    print('Error: tried to take more than 4 cards into display case')
+                    break
             self.time_of_last_harvest = time.time()
             for player in self.gamestate.players:
                 player.shouted_set = None
