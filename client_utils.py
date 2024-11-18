@@ -50,6 +50,6 @@ class Pinger:
     
     def onPong(self):
         self.last_is_ping_not_pong = False
-        pong_time = self.last_png_time
-        self.last_png_time = time.time()
-        return pong_time
+        rtl = time.time() - self.last_png_time
+        self.last_png_time += rtl
+        return rtl
