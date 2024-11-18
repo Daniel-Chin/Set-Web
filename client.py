@@ -103,6 +103,7 @@ class Root(tk.Tk):
         self.is_closed = False
         self.last_info_change = 0
         self.serverClock = ServerClock()
+        self.pinger = Pinger(lambda: self.submit({ CEF.TYPE: CET.PING }))
 
         self.setup()
     
@@ -117,6 +118,7 @@ class Root(tk.Tk):
             # print('update GUI...')
             self.update()
             next_update_time = time.time() + 1 / FPS
+            self.pinger.poll()
             # print('processQueue...')
             self.processQueue()
             # print('ok')
@@ -144,6 +146,11 @@ class Root(tk.Tk):
                 def f():
                     messagebox.showinfo(title, msg)
                 self.after_idle(f)
+            elif type_ == SET.PONG:
+                rtl = self.pinger.onPong()
+                self.leftPanel.selfConfigBar.labelPing.config(
+                    text=f'PING: {round(rtl * 1000)} ms', 
+                )
             else:
                 raise ValueError(f'Unexpected event type: {type_}')
     
@@ -364,6 +371,11 @@ class SelfConfigBar(ttk.Frame):
         )
         buttonChangeMyColor.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
+        )
+
+        self.labelPing = ttk.Label(self, text='???')
+        self.labelPing.pack(
+            side=tk.RIGHT, padx=PADX, pady=PADY, 
         )
     
     def changeMyName(self):

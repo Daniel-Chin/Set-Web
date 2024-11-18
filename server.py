@@ -272,6 +272,11 @@ class Server:
                 self.gamestate.public_zone[vacant[1]][vacant[0]] = SmartCard(
                     card, time.time(), 
                 )
+            elif type_ == CET.PING:
+                await sendPrimitive({
+                    SEF.TYPE: SET.PONG,
+                }, self.writers[uuid])
+                return
             else:
                 raise ValueError(f'Unknown event type: {type_}')
             await self.broadcast(self.gamestatePacket())

@@ -79,6 +79,7 @@ class ServerEventType(str, Enum):
     GAMESTATE = 'GAMESTATE'
     YOU_ARE = 'YOU_ARE'
     POPUP_MESSAGE = 'POPUP_MESSAGE'
+    PONG = 'PONG'
 
 class ClientEventField(str, Enum):
     TYPE = 'type'
@@ -100,6 +101,7 @@ class ClientEventType(str, Enum):
     TOGGLE_SELECT_CARD_DISPLAY = 'TOGGLE_SELECT_CARD_DISPLAY'
     CLEAR_MY_SELECTIONS = 'CLEAR_MY_SELECTIONS'
     DEAL_CARD = 'DEAL_CARD'
+    PING = 'PING'
 
 def sendPrefix(payload_size: int, writer: asyncio.StreamWriter):
     prefix = format(payload_size, f'0{PACKET_LEN_PREFIX_LEN}d').encode()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as tp
 import time
 
 import tkinter as tk
@@ -29,3 +30,26 @@ class ServerClock:
     def onReceiveServerTime(self, server_time: float):
         offset = server_time - time.time()
         self.offset = max(self.offset, offset)
+
+class Pinger:
+    def __init__(
+        self, ping: tp.Callable[[], None], interval: float = 2.0, 
+    ):
+        self.ping = ping
+        self.interval = interval
+        self.last_is_ping_not_pong = False
+        self.last_png_time = 0.0
+    
+    def poll(self):
+        if self.last_is_ping_not_pong:
+            return
+        if time.time() - self.last_png_time >= self.interval:
+            self.last_is_ping_not_pong = True
+            self.last_png_time = time.time()
+            self.ping()
+    
+    def onPong(self):
+        self.last_is_ping_not_pong = False
+        pong_time = self.last_png_time
+        self.last_png_time = time.time()
+        return pong_time
