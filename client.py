@@ -242,7 +242,8 @@ class Root(tk.Tk):
         elif '_' in text:
             left, right = text.split('_')
             text = left + right
-            key = 'Alt-' + right[0].lower()
+            # key = 'Alt-' + right[0].lower()
+            key = right[0].lower()
             underline = len(left)
         else:
             key = None
