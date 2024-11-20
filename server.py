@@ -21,6 +21,7 @@ from shared import (
 from gamestate import *
 
 class HashMismatchError(Exception): pass
+class JustWarnSourceUser(Exception): pass
 
 class UndoTape:
     def __init__(self, max_size: int = 64):
@@ -73,6 +74,11 @@ class Server:
             while True:
                 try:
                     event = await recvPrimitive(reader)
+                    try:
+                        await self.handleEvent(uuid, event)
+                    except JustWarnSourceUser as e:
+                        payload = self.popupPayload('Warning', str(e))
+                        sendPayload(payload, writer)
                 except (
                     asyncio.IncompleteReadError, 
                     BrokenPipeError, 
@@ -80,15 +86,15 @@ class Server:
                 ):
                     print(f'Client {addr} disconnected')
                     break
-                await self.handleEvent(uuid, event)
         except asyncio.CancelledError:
-            print(f'Client handler task cancelled for {addr}')
+            print(f'Client handler task cancelled for {uuid[:4]}')
         except Exception as e:
-            print(f'Error with client {addr}: {e}')
+            print(f'Uncaught error with {uuid[:4]}: {e}')
+            input('Press Enter to see exception and resume serving...')
             traceback.print_exc()
         finally:
             await self.onPlayerLeave(uuid)
-            print(f'Closing connection to {addr}...')
+            print(f'Closing connection with {uuid[:4]} ({addr})...')
             writer.close()
             try:
                 await writer.wait_closed()
@@ -368,13 +374,16 @@ class Server:
                 )
                 print(player.name, ':', score, file=buf)
             buf.seek(0)
-            payload = primitiveToPayload({
-                SEF.TYPE: SET.POPUP_MESSAGE,
-                SEF.CONTENT: ('Count cards', buf.read()),
-            })
+            payload = self.popupPayload('Count cards', buf.read())
             await self.broadcast(payload)
         else:
             raise ValueError(f'Unknown vote: {consensus}')
+    
+    def popupPayload(self, title: str, content: str):
+        return primitiveToPayload({
+            SEF.TYPE: SET.POPUP_MESSAGE,
+            SEF.CONTENT: (title, content),
+        })
     
     def harvest(self, taker_uuid: str):
             self.undoTape.recordNewState(self.gamestate)
