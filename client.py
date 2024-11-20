@@ -14,7 +14,6 @@ from tkinter import ttk, font
 from tkinter import messagebox
 from tkinter import simpledialog
 from uuid import uuid4
-import json
 
 from shared import *
 from shared import (
