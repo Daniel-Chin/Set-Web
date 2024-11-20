@@ -271,11 +271,10 @@ class BottomPanel(ttk.Frame):
         )
 
         self.buttonSpeak = root.newButton(
-            self, text='Speak', command=self.speak, 
+            self, text='Chat', command=self.speak, 
         )
         self.buttonSpeak.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
-            expand=True, fill=tk.X,
         )
 
         self.buttonCallSet = root.newButton(
