@@ -1,0 +1,5 @@
+- Let them: git clone/pull
+- Let them: rm env.py
+- Ask: if you can scale the window, how much would you scale it by?
+- Let them: edit env.py
+- Explain GUI
