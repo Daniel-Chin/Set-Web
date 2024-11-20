@@ -2,6 +2,8 @@
 Play the game Set over the internet.  
 
 # How
+You need python >= 3.8.  
+
 ## Client
 - `pip install -r requirements.txt`
 - `python client.py`
