@@ -78,7 +78,7 @@ class Server:
                         await self.handleEvent(uuid, event)
                     except JustWarnSourceUser as e:
                         payload = self.popupPayload('Warning', str(e))
-                        sendPayload(payload, writer)
+                        await sendPayload(payload, writer)
                 except (
                     asyncio.IncompleteReadError, 
                     BrokenPipeError, 
