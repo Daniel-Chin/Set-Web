@@ -309,6 +309,12 @@ class Server:
                     raise JustWarnSourceUser('Undo canceled: tape mismatch. Someone else either did undo or took a set at the same time as you tried to undo.')
                 else:
                     self.time_of_last_harvest = time.time()
+            elif type_ == CET.SPEAK:
+                content = event[CEF.TARGET_VALUE]
+                assert isinstance(content, str)
+                await self.broadcast(self.popupPayload(
+                    f'{myself.name} said:', content, 
+                ))
             else:
                 raise ValueError(f'Unknown event type: {type_}')
             await self.broadcast(self.gamestatePacket())

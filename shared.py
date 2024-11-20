@@ -105,6 +105,7 @@ class ClientEventType(str, Enum):
     PING = 'PING'
     TAKE = 'TAKE'
     UNDO = 'UNDO'
+    SPEAK = 'SPEAK'
 
 def sendPrefix(payload_size: int, writer: asyncio.StreamWriter):
     prefix = format(payload_size, f'0{PACKET_LEN_PREFIX_LEN}d').encode()

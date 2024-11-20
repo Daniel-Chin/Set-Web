@@ -270,6 +270,14 @@ class BottomPanel(ttk.Frame):
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
+        self.buttonSpeak = root.newButton(
+            self, text='Speak', command=self.speak, 
+        )
+        self.buttonSpeak.pack(
+            side=tk.LEFT, padx=PADX, pady=PADY, 
+            expand=True, fill=tk.X,
+        )
+
         self.buttonCallSet = root.newButton(
             self, text='_Set!!!', command=self.callSet, 
         )
@@ -294,6 +302,13 @@ class BottomPanel(ttk.Frame):
 
     def clearMyVote(self):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
+    
+    def speak(self):
+        speech = simpledialog.askstring(
+            'Speak', 'Send a message to everyone:',
+        )
+        if speech is not None:
+            self.root.submit({ CEF.TYPE: CET.SPEAK, CEF.TARGET_VALUE: speech })
 
     def callSet(self):
         if self.root.getMyself().shouted_set is None:
@@ -373,7 +388,7 @@ class SelfConfigBar(ttk.Frame):
     def changeMyName(self):
         old_name = self.root.getMyself().name
         new_name = simpledialog.askstring(
-            'Change My Name', 'Enter new name', initialvalue=old_name, 
+            'Change My Name', 'Enter new name:', initialvalue=old_name, 
         )
         if new_name is None:
             return
