@@ -26,7 +26,7 @@ from gamestate import *
 from texture import Texture
 from client_utils import *
 
-HEAT_LASTS_FOR = 3 # sec
+HEAT_LASTS_FOR = 1 # sec
 
 BOLD_STYLE = 'Bold.TLabel'
 SMALL_STYLE = 'small.TLabel'
