@@ -2,23 +2,29 @@
 Play the game Set over the internet.  
 
 ## How
-You need python >= 3.8.  
+### Dependencies
+- If you have `uv`:
+  - `uv sync`
+- Otherwise:
+  - Install python >= 3.8.  
+  - `pip install -r requirements.txt`
 
 ### Client
-- `pip install -r requirements.txt`
 - `python client.py`
+  - For uv, instead run: `uv run client.py`
 - For GUI options, edit ["./env.py"](./env.py)
   - If it's not existent, run "client.py" once. That will generate the default env.  
 
 ### Server
-- `pip install -r requirements.txt`
 - Get Cairo. 
   - On linux you probably already have it. 
   - On Windows you need GTK. 
   - On MacOS you can `brew install cairo`.  
     - Special thanks: Wenye Ma.  
 - `python rasterize.py`
+  - For uv, instead run: `uv run rasterize.py`
 - `python server.py`
+  - For uv, instead run: `uv run server.py`
 
 ## Troubleshoot
 ### Linux freezes
