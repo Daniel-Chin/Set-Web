@@ -19,12 +19,6 @@ You need python >= 3.8.
 - `python rasterize.py`
 - `python server.py`
 
-### More dependencies (?)
-- defusedxml
-- cssselect2
-- cairocffi
-- pillow
-
 ## Acknowledgement
 - The card texture is taken from the wiki page. See  
   - https://en.wikipedia.org/wiki/Set_(card_game)

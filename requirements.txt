@@ -1,2 +1,10 @@
-CairoSVG==2.7.1
+CairoSVG
 tqdm
+pillow
+cairocffi
+cffi
+pycparser
+cssselect2
+webencodings
+tinycss2
+defusedxml
