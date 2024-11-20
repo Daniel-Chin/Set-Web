@@ -169,7 +169,7 @@ class Root(tk.Tk):
         defaultFont = font.nametofont("TkDefaultFont")
         defaultFont.configure(size=FONT_SIZE)
         self.option_add("*TSpinbox.Font", defaultFont)  # style.configure doesn't work for Spinbox
-        style.configure('TSpinbox', arrowsize=FONT_SIZE)
+        style.configure('TSpinbox', arrowsize=FONT_SIZE*2)
         style.configure(
             BOLD_STYLE, font=(FONT, FONT_SIZE, font.BOLD), 
             padding=padding, 
