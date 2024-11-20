@@ -73,6 +73,7 @@ async def receiver(reader: StreamReader, queue: asyncio.Queue[tp.Dict | None]):
                 asyncio.IncompleteReadError, 
                 BrokenPipeError,
                 ConnectionAbortedError, ConnectionResetError, 
+                TimeoutError, 
             ):
                 break
             await queue.put(event)
