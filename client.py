@@ -97,6 +97,8 @@ class Root(tk.Tk):
         self.pinger = Pinger(lambda: self.submit({ CEF.TYPE: CET.PING }))
         self.submitters: tp.List[asyncio.Task] = []
         self.last_undo_uuid: str = 'has not received any undo uuid since start'
+        self.dialogQueue: tp.List[tp.Coroutine] = []
+        self.dialogLock = asyncio.Lock()
 
         self.setup()
     
@@ -113,6 +115,7 @@ class Root(tk.Tk):
             self.update()
             next_update_time = time.time() + 1 / FPS
             self.pinger.poll()
+            await self.processDialogQueue()
             # print('processQueue...')
             self.processQueue()
             # print('ok')
@@ -121,6 +124,13 @@ class Root(tk.Tk):
             # print('idle...')
             await asyncio.sleep(max(0.001, next_update_time - time.time()))
             # print('ok')
+    
+    async def processDialogQueue(self):
+        try:
+            f = self.dialogQueue.pop(0)
+        except IndexError:
+            return
+        await f
     
     def processQueue(self):
         while not self.queue.empty():
@@ -140,9 +150,10 @@ class Root(tk.Tk):
                 print(title)
                 print(msg)
                 print('<<<<<<')
-                def f():
-                    messagebox.showinfo(title, msg)
-                self.after_idle(f)
+                async def f():
+                    async with self.dialogLock:
+                        messagebox.showinfo(title, msg)
+                self.dialogQueue.append(f())
             elif type_ == SET.PONG:
                 rtl = self.pinger.onPong()
                 self.leftPanel.selfConfigBar.labelPing.config(
@@ -214,10 +225,11 @@ class Root(tk.Tk):
     def onUnexpectedDisconnect(self):
         msg = 'Error: Unexpected disconnection by server.'
         print(msg)
-        def f():
-            messagebox.showerror(msg, msg)
-            self.is_closed = True
-        self.after_idle(f)
+        async def f():
+            async with self.dialogLock:
+                messagebox.showerror(msg, msg)
+                self.is_closed = True
+        self.dialogQueue.append(f())
     
     def getMyself(self):
         return self.gamestate.seekPlayer(self.uuid)
@@ -304,11 +316,14 @@ class BottomPanel(ttk.Frame):
         self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.IDLE })
     
     def speak(self):
-        speech = simpledialog.askstring(
-            'Speak', 'Send a message to everyone:',
-        )
-        if speech is not None:
-            self.root.submit({ CEF.TYPE: CET.SPEAK, CEF.TARGET_VALUE: speech })
+        async def f():
+            async with self.root.dialogLock:
+                speech = simpledialog.askstring(
+                    'Speak', 'Send a message to everyone:',
+                )
+                if speech is not None:
+                    self.root.submit({ CEF.TYPE: CET.SPEAK, CEF.TARGET_VALUE: speech })
+        self.root.dialogQueue.append(f())
 
     def callSet(self):
         if self.root.getMyself().shouted_set is None:
@@ -386,29 +401,35 @@ class SelfConfigBar(ttk.Frame):
         )
     
     def changeMyName(self):
-        old_name = self.root.getMyself().name
-        new_name = simpledialog.askstring(
-            'Change My Name', 'Enter new name:', initialvalue=old_name, 
-        )
-        if new_name is None:
-            return
-        self.changeNameTo(new_name)
-        writeConfig('last_name', new_name)
+        async def f():
+            async with self.root.dialogLock:
+                old_name = self.root.getMyself().name
+                new_name = simpledialog.askstring(
+                    'Change My Name', 'Enter new name:', initialvalue=old_name, 
+                )
+                if new_name is None:
+                    return
+                self.changeNameTo(new_name)
+                writeConfig('last_name', new_name)
+        self.root.dialogQueue.append(f())
     
     def changeNameTo(self, new_name: str):
         self.root.submit({ CEF.TYPE: CET.CHANGE_NAME, CEF.TARGET_VALUE: new_name })
     
     def changeMyColor(self):
-        old_color = self.root.getMyself().color
-        new_color = simpledialog.askstring(
-            'Change My Color', 
-            'Enter new color "r,g,b", 0 <= each <= 255. Hint: use a dark color for better contrast.', 
-            initialvalue=old_color, 
-        )
-        if new_color is None:
-            return
-        self.changeColorTo(new_color)
-        writeConfig('last_color', new_color)
+        async def f():
+            async with self.root.dialogLock:
+                old_color = self.root.getMyself().color
+                new_color = simpledialog.askstring(
+                    'Change My Color', 
+                    'Enter new color "r,g,b", 0 <= each <= 255. Hint: use a dark color for better contrast.', 
+                    initialvalue=old_color, 
+                )
+                if new_color is None:
+                    return
+                self.changeColorTo(new_color)
+                writeConfig('last_color', new_color)
+        self.root.dialogQueue.append(f())
     
     def changeColorTo(self, new_color: str):
         self.root.submit({ CEF.TYPE: CET.CHANGE_COLOR, CEF.TARGET_VALUE: new_color })
