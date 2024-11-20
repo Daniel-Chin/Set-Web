@@ -1,16 +1,16 @@
 # Set Web
 Play the game Set over the internet.  
 
-# How
+## How
 You need python >= 3.8.  
 
-## Client
+### Client
 - `pip install -r requirements.txt`
 - `python client.py`
 - For GUI options, edit ["./env.py"](./env.py)
   - If it's not existent, run "client.py" once. That will generate the default env.  
 
-## Server
+### Server
 - `pip install -r requirements.txt`
 - Get Cairo. 
   - On linux you probably already have it. 
@@ -18,6 +18,12 @@ You need python >= 3.8.
   - On MacOS you can `brew install cairo`.  
 - `python rasterize.py`
 - `python server.py`
+
+### More dependencies (?)
+- defusedxml
+- cssselect2
+- cairocffi
+- pillow
 
 ## Acknowledgement
 - The card texture is taken from the wiki page. See  
