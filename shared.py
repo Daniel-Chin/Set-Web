@@ -74,6 +74,7 @@ class Vote(str, Enum):
 class ServerEventField(str, Enum):
     TYPE = 'type'
     CONTENT = 'content'
+    LAST_UNDO_UUID = 'last_undo_uuid'
 
 class ServerEventType(str, Enum):
     GAMESTATE = 'GAMESTATE'
@@ -103,6 +104,7 @@ class ClientEventType(str, Enum):
     DEAL_CARD = 'DEAL_CARD'
     PING = 'PING'
     TAKE = 'TAKE'
+    UNDO = 'UNDO'
 
 def sendPrefix(payload_size: int, writer: asyncio.StreamWriter):
     prefix = format(payload_size, f'0{PACKET_LEN_PREFIX_LEN}d').encode()

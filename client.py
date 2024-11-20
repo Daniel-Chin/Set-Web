@@ -64,7 +64,7 @@ async def Network():
         await writer.wait_closed()
         print('ok')
 
-async def receiver(reader: StreamReader, queue: asyncio.Queue):
+async def receiver(reader: StreamReader, queue: asyncio.Queue[tp.Dict | None]):
     try:
         while True:
             try:
@@ -78,7 +78,7 @@ async def receiver(reader: StreamReader, queue: asyncio.Queue):
 
 class Root(tk.Tk):
     def __init__(
-        self, queue: asyncio.Queue, writer: StreamWriter, 
+        self, queue: asyncio.Queue[tp.Dict | None], writer: StreamWriter, 
         uuid: str, gamestate: Gamestate,
     ):
         super().__init__()
@@ -91,6 +91,7 @@ class Root(tk.Tk):
         self.serverClock = ServerClock()
         self.pinger = Pinger(lambda: self.submit({ CEF.TYPE: CET.PING }))
         self.submitters: tp.List[asyncio.Task] = []
+        self.last_undo_uuid: str = 'has not received any undo uuid since start'
 
         self.setup()
     
@@ -125,6 +126,7 @@ class Root(tk.Tk):
             type_ = SET(event[SEF.TYPE])
             if type_ == SET.GAMESTATE:
                 self.onUpdateGamestate(Gamestate.fromPrimitive(event[SEF.CONTENT]))
+                self.last_undo_uuid = event[SEF.LAST_UNDO_UUID]
             elif type_ == SET.YOU_ARE:
                 assert False
             elif type_ == SET.POPUP_MESSAGE:
@@ -279,10 +281,10 @@ class BottomPanel(ttk.Frame):
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
-        self.buttonVoteUndo = root.newButton(
-            self, text='Vote _Undo', command=self.voteUndo, 
+        self.buttonUndo = root.newButton(
+            self, text='_Undo', command=self.undo, 
         )
-        self.buttonVoteUndo.pack(
+        self.buttonUndo.pack(
             side=tk.LEFT, padx=PADX, pady=PADY, 
         )
 
@@ -298,8 +300,8 @@ class BottomPanel(ttk.Frame):
     def take(self):
         self.root.submit({ CEF.TYPE: CET.TAKE })
     
-    def voteUndo(self):
-        self.root.submit({ CEF.TYPE: CET.VOTE, CEF.VOTE: Vote.UNDO })
+    def undo(self):
+        self.root.submit({ CEF.TYPE: CET.UNDO, CEF.TARGET_VALUE: self.root.last_undo_uuid })
     
     def refresh(self):
         if self.root.getMyself().shouted_set is None:
@@ -309,7 +311,7 @@ class BottomPanel(ttk.Frame):
         disableIf(self.buttonClearMyVote, (
             self.root.getMyself().voting == Vote.IDLE
         ))
-        disableIf(self.buttonVoteUndo, (
+        disableIf(self.buttonUndo, (
             self.root.getMyself().voting == Vote.UNDO
         ))
 
@@ -896,7 +898,7 @@ async def main():
         assert SET(event[SEF.TYPE]) == SET.GAMESTATE
         gamestate = Gamestate.fromPrimitive(event[SEF.CONTENT])
         print('ok')
-        queue = asyncio.Queue()
+        queue: asyncio.Queue[tp.Dict | None] = asyncio.Queue()
         receiveTask = asyncio.create_task(receiver(reader, queue))
 
         root = Root(queue, writer, uuid, gamestate)

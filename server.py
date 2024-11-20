@@ -22,28 +22,38 @@ from gamestate import *
 
 class HashMismatchError(Exception): pass
 class JustWarnSourceUser(Exception): pass
+class UndoUUIDMismatch(Exception): pass
 
 class UndoTape:
     def __init__(self, max_size: int = 64):
         self.max_size = max_size
-        self.tape: tp.List[Gamestate] = []
+        self.tape: tp.List[tp.Tuple[str, Gamestate]] = []
     
     def recordNewState(self, gamestate: Gamestate):
-        self.tape.append(copy.deepcopy(gamestate))
+        self.tape.append((str(uuid4()), copy.deepcopy(gamestate)))
         if len(self.tape) > self.max_size:
             self.tape.pop(0)
     
-    def undo(self, current: Gamestate):
+    def undoFromTo(self, from_: Gamestate, to_uuid: str):
+        if to_uuid != self.lastUUID():
+            raise UndoUUIDMismatch()
+        return self.forceUndoFrom(from_)
+    
+    def forceUndoFrom(self, from_: Gamestate):
         try:
-            memory = self.tape.pop()
+            memory = self.tape[-1][1]
         except IndexError:
-            print('Warning: undo failed --- tape is empty')
-            return current
-        if memory.getUuids() != current.getUuids():
-            print('Warning: undo failed --- undo past player join/leave is not supported')
-            self.tape.clear()
-            return current
+            raise JustWarnSourceUser('undo failed --- tape is empty')
+        if memory.getUuids() != from_.getUuids():
+            raise JustWarnSourceUser('undo failed --- undo past player join/leave is not supported')
+        self.tape.pop()
         return memory
+    
+    def lastUUID(self):
+        try:
+            return self.tape[-1][0]
+        except IndexError:
+            return 'START OF TAPE'
 
 class Server:
     def __init__(self):
@@ -118,6 +128,7 @@ class Server:
         self.gamestate.validate()
         return primitiveToPayload({
             SEF.TYPE: SET.GAMESTATE,
+            SEF.LAST_UNDO_UUID: self.undoTape.lastUUID(),
             SEF.CONTENT: self.gamestate.toPrimitive(), 
         })
 
@@ -289,6 +300,15 @@ class Server:
                 # self.checkHash(event)
                 if not self.harvest(uuid):
                     return
+            elif type_ == CET.UNDO:
+                undo_uuid = event[CEF.TARGET_VALUE]
+                assert isinstance(undo_uuid, str)
+                try:
+                    self.gamestate = self.undoTape.undoFromTo(self.gamestate, undo_uuid)
+                except UndoUUIDMismatch:
+                    raise JustWarnSourceUser('Undo canceled: tape mismatch. Someone else either did undo or took a set at the same time as you tried to undo.')
+                else:
+                    self.time_of_last_harvest = time.time()
             else:
                 raise ValueError(f'Unknown event type: {type_}')
             await self.broadcast(self.gamestatePacket())
@@ -361,9 +381,6 @@ class Server:
                 player.wealth_thickness = 0
                 player.display_case = Player.newDisplayCase()
             self.time_of_last_harvest = time.time()
-        elif consensus == Vote.UNDO:
-            self.time_of_last_harvest = time.time()
-            self.gamestate = self.undoTape.undo(self.gamestate)
         elif consensus == Vote.ACCEPT:
             winner = self.gamestate.uniqueShoutSetPlayer()
             assert winner is not None
@@ -414,7 +431,7 @@ class Server:
                         taker.wealth_thickness += 1
                 player.display_case = Player.newDisplayCase()
         if not the_set:
-            self.gamestate = self.undoTape.undo(self.gamestate)
+            self.gamestate = self.undoTape.forceUndoFrom(self.gamestate)
             return False
         for i, card in enumerate(the_set):
             card.selected_by.clear()
