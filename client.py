@@ -69,7 +69,11 @@ async def receiver(reader: StreamReader, queue: asyncio.Queue[tp.Dict | None]):
         while True:
             try:
                 event = await recvPrimitive(reader)
-            except asyncio.IncompleteReadError:
+            except (
+                asyncio.IncompleteReadError, 
+                BrokenPipeError,
+                ConnectionAbortedError, ConnectionResetError, 
+            ):
                 break
             await queue.put(event)
         await queue.put(None)
