@@ -95,7 +95,7 @@ class Server:
                     ConnectionAbortedError, ConnectionResetError, 
                     TimeoutError, 
                 ):
-                    print(f'Client {addr} disconnected')
+                    print(f'Client {uuid[4]} disconnected')
                     break
         except asyncio.CancelledError:
             print(f'Client handler task cancelled for {uuid[:4]}')
