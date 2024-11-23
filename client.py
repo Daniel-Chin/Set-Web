@@ -28,6 +28,7 @@ from texture import Texture
 from client_utils import *
 
 HEAT_LASTS_FOR = 1 # sec
+UNDO_ALLOWED_AFTER = 1 # sec
 
 BOLD_STYLE = 'Bold.TLabel'
 SMALL_STYLE = 'small.TLabel'
@@ -101,6 +102,8 @@ class Root(tk.Tk):
         self.last_undo_uuid: str = 'has not received any undo uuid since start'
         self.dialogQueue: tp.List[tp.Coroutine] = []
         self.dialogLock = asyncio.Lock()
+        self.undo_uuids_seen = set()
+        self.last_undo_by_others = 0.0
 
         self.setup()
     
@@ -143,7 +146,12 @@ class Root(tk.Tk):
             type_ = SET(event[SEF.TYPE])
             if type_ == SET.GAMESTATE:
                 self.onUpdateGamestate(Gamestate.fromPrimitive(event[SEF.CONTENT]))
-                self.last_undo_uuid = event[SEF.LAST_UNDO_UUID]
+                new_undo_uuid = event[SEF.LAST_UNDO_UUID]
+                if new_undo_uuid != self.last_undo_uuid:
+                    self.last_undo_uuid = new_undo_uuid
+                    if new_undo_uuid in self.undo_uuids_seen:
+                        self.last_undo_by_others = time.time()
+                    self.undo_uuids_seen.add(new_undo_uuid)
             elif type_ == SET.YOU_ARE:
                 assert False
             elif type_ == SET.POPUP_MESSAGE:
@@ -269,6 +277,7 @@ class Root(tk.Tk):
     def animate(self):
         self.leftPanel.animate()
         self.publicZone.animate()
+        self.bottomPanel.animate()
 
 class BottomPanel(ttk.Frame):
     def __init__(self, root: Root, parent: tk.Widget | tk.Tk):
@@ -349,6 +358,11 @@ class BottomPanel(ttk.Frame):
         ))
         disableIf(self.buttonUndo, (
             self.root.getMyself().voting == Vote.UNDO
+        ))
+    
+    def animate(self):
+        disableIf(self.buttonUndo, (
+            time.time() < self.root.last_undo_by_others + UNDO_ALLOWED_AFTER
         ))
 
 class LeftPanel(ttk.Frame):
