@@ -38,23 +38,23 @@ class UndoTape:
         if len(self.tape) > self.max_size:
             self.tape.pop(0)
     
-    def undoFromTo(self, from_: Gamestate, to_uuid: str):
+    def undoTo(self, players_uuid: tp.List[str], to_uuid: str):
         for uuid, _ in self.tape:
             if uuid == to_uuid:
                 break
         else:
             raise UndoToFuture()
         while True:
-            uuid, memory = self.forceUndoFrom(from_)
+            uuid, memory = self.forceUndo(players_uuid)
             if uuid == to_uuid:
                 return memory
     
-    def forceUndoFrom(self, from_: Gamestate):
+    def forceUndo(self, players_uuid: tp.List[str]):
         try:
             uuid, memory = self.tape[-1]
         except IndexError:
             raise JustWarnSourceUser('undo failed --- tape is empty')
-        if memory.getUuids() != from_.getUuids():
+        if memory.getUuids() != players_uuid:
             raise JustWarnSourceUser('undo failed --- undo past player join/leave is not supported')
         self.tape.pop()
         return uuid, memory
@@ -315,7 +315,7 @@ class Server:
                 undo_uuid = event[CEF.TARGET_VALUE]
                 assert isinstance(undo_uuid, str)
                 try:
-                    self.gamestate = self.undoTape.undoFromTo(self.gamestate, undo_uuid)
+                    self.gamestate = self.undoTape.undoTo(self.gamestate.getUuids(), undo_uuid)
                 except UndoToFuture:
                     raise JustWarnSourceUser('Undo canceled: Someone else either clicked undo at the same time as you tried to undo.')
                 else:
@@ -448,7 +448,7 @@ class Server:
                         taker.wealth_thickness += 1
                 player.display_case = Player.newDisplayCase()
         if not the_set:
-            _, self.gamestate = self.undoTape.forceUndoFrom(self.gamestate)
+            _, self.gamestate = self.undoTape.forceUndo(self.gamestate.getUuids())
             return False
         for i, card in enumerate(the_set):
             card.selected_by.clear()
