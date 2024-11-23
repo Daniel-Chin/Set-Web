@@ -24,7 +24,9 @@ from gamestate import *
 
 class HashMismatchError(Exception): pass
 class JustWarnSourceUser(Exception): pass
-class UndoUUIDMismatch(Exception): pass
+class UndoToFuture(Exception): 
+    # More precisely: trying to undo to a UUID not present in the current timeline.
+    pass
 
 class UndoTape:
     def __init__(self, max_size: int = 64):
@@ -37,19 +39,25 @@ class UndoTape:
             self.tape.pop(0)
     
     def undoFromTo(self, from_: Gamestate, to_uuid: str):
-        if to_uuid != self.lastUUID():
-            raise UndoUUIDMismatch()
-        return self.forceUndoFrom(from_)
+        for uuid, _ in self.tape:
+            if uuid == to_uuid:
+                break
+        else:
+            raise UndoToFuture()
+        while True:
+            uuid, memory = self.forceUndoFrom(from_)
+            if uuid == to_uuid:
+                return memory
     
     def forceUndoFrom(self, from_: Gamestate):
         try:
-            memory = self.tape[-1][1]
+            uuid, memory = self.tape[-1]
         except IndexError:
             raise JustWarnSourceUser('undo failed --- tape is empty')
         if memory.getUuids() != from_.getUuids():
             raise JustWarnSourceUser('undo failed --- undo past player join/leave is not supported')
         self.tape.pop()
-        return memory
+        return uuid, memory
     
     def lastUUID(self):
         try:
@@ -308,8 +316,8 @@ class Server:
                 assert isinstance(undo_uuid, str)
                 try:
                     self.gamestate = self.undoTape.undoFromTo(self.gamestate, undo_uuid)
-                except UndoUUIDMismatch:
-                    raise JustWarnSourceUser('Undo canceled: tape mismatch. Someone else either did undo or took a set at the same time as you tried to undo.')
+                except UndoToFuture:
+                    raise JustWarnSourceUser('Undo canceled: Someone else either clicked undo at the same time as you tried to undo.')
                 else:
                     self.time_of_last_harvest = time.time()
             elif type_ == CET.SPEAK:
@@ -440,7 +448,7 @@ class Server:
                         taker.wealth_thickness += 1
                 player.display_case = Player.newDisplayCase()
         if not the_set:
-            self.gamestate = self.undoTape.forceUndoFrom(self.gamestate)
+            _, self.gamestate = self.undoTape.forceUndoFrom(self.gamestate)
             return False
         for i, card in enumerate(the_set):
             card.selected_by.clear()
